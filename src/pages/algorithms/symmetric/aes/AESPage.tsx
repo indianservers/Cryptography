@@ -12,6 +12,7 @@ import { ExportReportButton } from "../../../../components/common/ExportReportBu
 import { RoundTimeline } from "../../../../components/visualization/RoundTimeline";
 import { AvalancheChart } from "../../../../components/visualization/AvalancheChart";
 import { randomHex, textToBinary, textToHex, hexPairs } from "../../../../lib/format";
+import { buildAes128Steps, hexByte, hexWord } from "./aesEducationalCore";
 
 const hexToBytes = (value: string) => new Uint8Array(hexPairs(value).map((byte) => parseInt(byte, 16)));
 
@@ -26,7 +27,19 @@ export default function AESPage() {
   const [cryptoMessage, setCryptoMessage] = useState("Web Crypto output appears after encryption.");
   const inputHex = textToHex(plain).padEnd(32, "0").slice(0, 32);
   const matrix = hexPairs(inputHex).slice(0, 16);
-  const roundKeys = useMemo(() => hexPairs((key + randomHex(16)).slice(0, 64)).slice(0, 16), [key]);
+  const aesTrace = useMemo(() => buildAes128Steps(inputHex, key), [inputHex, key]);
+  const roundKeys = useMemo(() => aesTrace.roundKeys[0].map(hexByte), [aesTrace.roundKeys]);
+  const roundSummaries = useMemo(() => Array.from({ length: 11 }, (_, round) => {
+    const roundSteps = aesTrace.steps.filter((step) => step.round === round);
+    const stateStep = [...roundSteps].reverse().find((step) => step.operation === "AddRoundKey") ?? roundSteps[roundSteps.length - 1];
+    return {
+      round,
+      key: aesTrace.roundKeys[round],
+      state: stateStep.state,
+      stateTitle: round === 0 ? "After initial AddRoundKey" : round === 10 ? "Final ciphertext" : `After round ${round} AddRoundKey`,
+      operations: roundSteps.map((step) => ({ operation: step.operation, state: step.state, title: step.title })),
+    };
+  }), [aesTrace.roundKeys, aesTrace.steps]);
   const pseudoCipher = useMemo(() => hexPairs(inputHex).map((b, index) => (parseInt(b, 16) ^ parseInt(roundKeys[index] ?? "00", 16)).toString(16).padStart(2, "0")).join(""), [inputHex, roundKeys]);
   const encryptWithWebCrypto = async () => {
     if (!["GCM", "CBC", "CTR"].includes(mode)) {
@@ -71,7 +84,60 @@ export default function AESPage() {
           <div className="space-y-4"><p className="text-sm text-slate-600">{cryptoMessage}</p><HexViewer value={cipher || pseudoCipher} /><CopyButton value={cipher || pseudoCipher} /><DownloadButton filename="aes-output.txt" value={cipher || pseudoCipher} /><div><h3 className="mb-2 font-semibold">Input as 4x4 state matrix</h3><MatrixView values={matrix} /></div><AvalancheChart changedBits={63} /></div>
         </OutputPanel>
       </div>
-      <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="mb-4 text-lg font-semibold">Educational AES block visualizer</h2><RoundTimeline steps={["Input block", "Initial AddRoundKey", "SubBytes", "ShiftRows", "MixColumns", "AddRoundKey", "Final round without MixColumns", "Ciphertext"]} active={2} /><div className="mt-5 grid gap-5 lg:grid-cols-3"><div><h3 className="mb-2 font-semibold">Round key matrix</h3><MatrixView values={roundKeys} changed={[0, 5, 10, 15]} /></div><div><h3 className="mb-2 font-semibold">Binary block</h3><pre className="max-h-72 overflow-auto rounded-md bg-slate-950 p-4 font-mono text-xs text-lime-100">{textToBinary(plain)}</pre></div><div><h3 className="mb-2 font-semibold">Key expansion notes</h3><p className="text-sm text-slate-600">RotWord, SubWord, Rcon, and XOR derive round keys. This page keeps the expanded state visible for learning; production systems must never expose it.</p></div></div></section>
+      <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="mb-4 text-lg font-semibold">Educational AES block visualizer</h2><RoundTimeline steps={["Input block", "Initial AddRoundKey", "SubBytes", "ShiftRows", "MixColumns", "AddRoundKey", "Final round without MixColumns", "Ciphertext"]} active={2} /><div className="mt-5 grid gap-5 lg:grid-cols-3"><div><h3 className="mb-2 font-semibold">Round 0 key matrix</h3><MatrixView values={roundKeys} changed={[0, 5, 10, 15]} /></div><div><h3 className="mb-2 font-semibold">Binary block</h3><pre className="max-h-72 overflow-auto rounded-md bg-slate-950 p-4 font-mono text-xs text-lime-100">{textToBinary(plain)}</pre></div><div><h3 className="mb-2 font-semibold">Key expansion notes</h3><p className="text-sm text-slate-600">RotWord, SubWord, Rcon, and XOR derive round keys K0 through K10. The table below shows the key and intermediate ciphertext/state for every round.</p></div></div></section>
+
+      <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Round-by-round key and ciphertext states</h2>
+            <p className="mt-1 text-sm text-slate-600">This AES-128 educational trace uses the first 16 plaintext bytes and first 16 key bytes. Each row shows the expanded round key and the state after that round's AddRoundKey. Round 10 is the final ciphertext.</p>
+          </div>
+          <Link className="btn" to="/algorithms/symmetric/aes-128-step">Open step-by-step byte view</Link>
+        </div>
+        <div className="space-y-4">
+          {roundSummaries.map((summary) => (
+            <details key={summary.round} className="rounded-md border border-slate-200 bg-slate-50 p-4" open={summary.round <= 2 || summary.round === 10}>
+              <summary className="cursor-pointer list-none">
+                <div className="grid gap-3 lg:grid-cols-[7rem_1fr_1fr]">
+                  <div>
+                    <div className="text-xs font-semibold uppercase text-slate-500">Round</div>
+                    <div className="text-xl font-bold">{summary.round}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold uppercase text-slate-500">Key in round {summary.round}</div>
+                    <div className="break-all font-mono text-sm">{hexWord(summary.key)}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold uppercase text-slate-500">{summary.stateTitle}</div>
+                    <div className="break-all font-mono text-sm">{hexWord(summary.state)}</div>
+                  </div>
+                </div>
+              </summary>
+              <div className="mt-4 grid gap-4 xl:grid-cols-[0.8fr_0.8fr_1.2fr]">
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold">Round key matrix K{summary.round}</h3>
+                  <MatrixView values={summary.key.map(hexByte)} />
+                </div>
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold">Ciphertext/state matrix</h3>
+                  <MatrixView values={summary.state.map(hexByte)} />
+                </div>
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold">Operations inside round {summary.round}</h3>
+                  <div className="max-h-72 overflow-auto rounded-md border border-slate-200 bg-white">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-100"><tr><th className="p-2 text-left">Step</th><th className="p-2 text-left">Operation</th><th className="p-2 text-left">State hex</th></tr></thead>
+                      <tbody>
+                        {summary.operations.map((operation, index) => <tr key={`${summary.round}-${operation.title}-${index}`} className="border-t border-slate-100"><td className="p-2 font-mono">{index + 1}</td><td className="p-2">{operation.operation}</td><td className="break-all p-2 font-mono text-xs">{hexWord(operation.state)}</td></tr>)}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </details>
+          ))}
+        </div>
+      </section>
       <section className="grid gap-6 xl:grid-cols-2"><div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-semibold">Learning notes</h2><p className="mt-2 text-sm text-slate-600">AES works on a 4x4 byte state. SubBytes provides nonlinear substitution, ShiftRows moves bytes across columns, MixColumns diffuses each column, and AddRoundKey injects secret material.</p></div><div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-semibold">Mistakes and export</h2><WarningBadge>ECB leaks repeated blocks. GCM and CTR require nonce uniqueness under a key.</WarningBadge><div className="mt-4"><ExportReportButton title="AES" data={{ plain, key, iv, mode, size, padding, pseudoCipher }} /></div></div></section>
     </div>
   );
