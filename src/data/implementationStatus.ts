@@ -45,6 +45,9 @@ const customRoutes = new Set([
   "/algorithms/encoding/hex",
   "/algorithms/encoding/binary",
   "/algorithms/tools/entropy-analyzer",
+  "/algorithms/hash/md5",
+  "/algorithms/hash/sha1",
+  "/algorithms/hash/sha3",
 ]);
 
 export function getImplementationStatus(route: string): ImplementationStatus {
