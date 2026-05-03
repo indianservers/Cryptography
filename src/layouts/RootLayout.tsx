@@ -7,6 +7,7 @@ import { ImplementationBadge } from "../components/common/ImplementationBadge";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { PrivacyBanner } from "../components/common/PrivacyBanner";
 import { PageChrome } from "../components/common/PageChrome";
+import { TopAlgorithmsMenu } from "../components/common/TopAlgorithmsMenu";
 
 const icons = { Shield, BookOpen, LockKeyhole, Waves, KeyRound, Fingerprint, Hash, FileKey, Database, Network, ChartBar, Zap, Box, Layers, SquareCode, Braces, Shuffle, Gauge, Cpu };
 
@@ -106,6 +107,7 @@ export default function RootLayout() {
         </div>
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <PrivacyBanner />
+          <TopAlgorithmsMenu />
           <Breadcrumbs />
           <PageChrome />
           <Suspense fallback={<div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">Loading cryptography module...</div>}>
