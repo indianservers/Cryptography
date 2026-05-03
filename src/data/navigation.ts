@@ -10,7 +10,15 @@ export const navigationItems: NavigationItem[] = algorithmMetadata.map(({ label,
   securityStatus,
   implementationStatus: getImplementationStatus(route),
   browserSupport: getBrowserSupport(route),
-}));
+})).concat([{
+  label: "Implementation Audit",
+  category: "Benchmark and Comparison",
+  icon: "Gauge",
+  route: "/algorithms/tools/audit",
+  securityStatus: "Educational",
+  implementationStatus: "Real",
+  browserSupport: "Custom TypeScript",
+}]);
 
 export const navigationCategories = [
   "Classical Cryptography",

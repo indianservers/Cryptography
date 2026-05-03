@@ -121,6 +121,7 @@ export const router = createBrowserRouter([
       { path: "algorithms/tools/entropy-analyzer", lazy: lazyPage(() => import("../pages/algorithms/tools/EntropyAnalyzerPage")) },
       { path: "algorithms/tools/key-format-converter", lazy: lazyPage(() => import("../pages/algorithms/tools/KeyFormatConverterPage")) },
       { path: "algorithms/tools/algorithm-comparison", lazy: lazyPage(() => import("../pages/algorithms/tools/AlgorithmComparisonPage")) },
+      { path: "algorithms/tools/audit", lazy: lazyPage(() => import("../pages/algorithms/tools/AuditPage")) },
       { path: "algorithms/tools/benchmark", lazy: lazyPage(() => import("../pages/algorithms/tools/BenchmarkPage")) },
       { path: "algorithms/tools/saved-experiments", lazy: lazyPage(() => import("../pages/algorithms/tools/SavedExperimentsPage")) },
       { path: "algorithms/tools/export-center", lazy: lazyPage(() => import("../pages/algorithms/tools/ExportCenterPage")) },
@@ -128,4 +129,3 @@ export const router = createBrowserRouter([
     ],
   },
 ]);
-

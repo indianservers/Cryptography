@@ -16,6 +16,7 @@ import { AvalancheChart } from "../../../../components/visualization/AvalancheCh
 import { randomHex, textToBinary, textToHex, hexPairs } from "../../../../lib/format";
 import { buildAesSteps, hexByte, hexWord } from "./aesEducationalCore";
 import { aesSBox } from "./aesTables";
+import { vectorsFor } from "../../../../data/testVectors";
 
 const hexToBytes = (value: string) => new Uint8Array(hexPairs(value).map((byte) => parseInt(byte, 16)));
 const bytesToHex = (value: Uint8Array) => Array.from(value, (byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -111,6 +112,8 @@ export default function AESPage() {
   const [aad, setAad] = useState("suite:aes:gcm");
   const [tagLength, setTagLength] = useState(128);
   const [cryptoMessage, setCryptoMessage] = useState("Web Crypto output appears after encryption.");
+  const [testVectorMessage, setTestVectorMessage] = useState("");
+  const [seenNonces, setSeenNonces] = useState<string[]>(() => JSON.parse(localStorage.getItem("mega-crypto-aes-nonces") ?? "[]") as string[]);
   const keyBits = keyBitsFromSize(size);
   const requiredKeyHexLength = keyBits / 4;
   const cleanedKey = cleanUserHex(key);
@@ -119,6 +122,8 @@ export default function AESPage() {
   const ivHexLength = cleanUserHex(iv).length;
   const ivValidationText = mode === "GCM" ? `GCM expects a 96-bit nonce: 24 hex characters. Current value has ${ivHexLength}.` : mode === "CTR" ? `CTR expects a 128-bit counter block: 32 hex characters. Current value has ${ivHexLength}.` : `CBC expects a 128-bit IV: 32 hex characters. Current value has ${ivHexLength}.`;
   const ivIsValid = mode === "GCM" ? ivHexLength >= 24 : ivHexLength >= 32;
+  const nonceFingerprint = `${size}:${mode}:${cleanedKey}:${cleanUserHex(iv).slice(0, mode === "GCM" ? 24 : 32)}`;
+  const nonceWasSeen = ["GCM", "CTR"].includes(mode) && seenNonces.includes(nonceFingerprint);
   const inputHex = textToHex(plain).padEnd(32, "0").slice(0, 32);
   const matrix = hexPairs(inputHex).slice(0, 16);
   const aesTrace = useMemo(() => buildAesSteps(inputHex, key, keyBits), [inputHex, key, keyBits]);
@@ -169,6 +174,11 @@ export default function AESPage() {
       const hex = bytesToHex(new Uint8Array(encrypted));
       setCipher(hex);
       setCipherInput(hex);
+      if (["GCM", "CTR"].includes(mode)) {
+        const next = [nonceFingerprint, ...seenNonces.filter((item) => item !== nonceFingerprint)].slice(0, 100);
+        setSeenNonces(next);
+        localStorage.setItem("mega-crypto-aes-nonces", JSON.stringify(next));
+      }
       setCryptoMessage(`Encrypted locally with Web Crypto ${size}-${mode}. The internal visualizer below traces the first 16-byte block.`);
     } catch (error) {
       setCryptoMessage(error instanceof Error ? error.message : "Web Crypto encryption failed.");
@@ -212,6 +222,26 @@ export default function AESPage() {
     setCipherInput("");
     setCryptoMessage("Loaded AES-128 educational vector values. The round visualizer uses the 00112233445566778899aabbccddeeff block.");
   };
+  const verifyAesVector = async () => {
+    const vector = vectorsFor("AES")[0];
+    setSize("AES-128");
+    setMode("CBC");
+    setPadding("No padding");
+    setKey(String(vector.input.key));
+    setIv(String(vector.input.iv));
+    const plaintextBytes = hexToBytes(String(vector.input.plaintextHex));
+    try {
+      const cryptoKey = await crypto.subtle.importKey("raw", hexToBytes(String(vector.input.key)), "AES-CBC", false, ["encrypt"]);
+      const encrypted = await crypto.subtle.encrypt({ name: "AES-CBC", iv: hexToBytes(String(vector.input.iv)) }, cryptoKey, toArrayBuffer(plaintextBytes));
+      const actual = bytesToHex(new Uint8Array(encrypted));
+      const expected = vector.expected.ciphertextHex;
+      setCipher(actual);
+      setCipherInput(actual);
+      setTestVectorMessage(actual === expected ? `PASS: ${vector.name}` : `FAIL: expected ${expected}, got ${actual}`);
+    } catch (error) {
+      setTestVectorMessage(error instanceof Error ? error.message : "AES vector verification failed.");
+    }
+  };
   const loadRecommended = () => {
     setSize("AES-256");
     setMode("GCM");
@@ -246,9 +276,11 @@ export default function AESPage() {
             <label className="label">Ciphertext hex for decrypt<input className="field mt-1 font-mono" value={cipherInput} onChange={(e) => setCipherInput(e.target.value)} placeholder="Encrypt output is copied here, or paste ciphertext" /></label>
             <label className="label">IV / nonce hex<input className={`field mt-1 font-mono ${ivIsValid ? "border-emerald-300 bg-emerald-50" : "border-rose-300 bg-rose-50"}`} value={iv} onChange={(e) => setIv(e.target.value)} /></label>
             <div className={`rounded-md border p-3 text-sm ${ivIsValid ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}>{ivValidationText}</div>
+            {nonceWasSeen && <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800">Nonce reuse detector: this key/mode/nonce combination was already used in this browser session history.</div>}
             {mode === "GCM" && <div className="grid gap-3 md:grid-cols-2"><label className="label">AAD<input className="field mt-1" value={aad} onChange={(e) => setAad(e.target.value)} /></label><label className="label">GCM tag length<select className="field mt-1" value={tagLength} onChange={(e) => setTagLength(Number(e.target.value))}><option value={128}>128 bits</option><option value={120}>120 bits</option><option value={112}>112 bits</option><option value={104}>104 bits</option><option value={96}>96 bits</option><option value={64}>64 bits</option></select></label></div>}
             <label className="label">Padding<select className="field mt-1" value={padding} onChange={(e) => setPadding(e.target.value)}><option>PKCS#7</option><option>Zero padding</option><option>No padding</option></select></label>
-            <div className="flex flex-wrap gap-2"><button className="btn" onClick={encryptWithWebCrypto}>Encrypt</button><button className="btn" onClick={decryptWithWebCrypto}>Decrypt</button><button className="btn" onClick={loadRecommended}>Recommended sample</button><button className="btn" onClick={loadUnsafe}>Unsafe sample</button><button className="btn" onClick={loadNistAesVector}>NIST-style vector</button><Link className="btn" to="/algorithms/symmetric/aes-128-step">Open internal operations</Link><button className="btn" onClick={() => setKey(randomHex(keyBits / 8))}>Random {size} key</button><button className="btn" onClick={() => setIv(randomHex(mode === "GCM" ? 12 : 16))}>Random IV</button></div>
+            <div className="flex flex-wrap gap-2"><button className="btn" onClick={encryptWithWebCrypto}>Encrypt</button><button className="btn" onClick={decryptWithWebCrypto}>Decrypt</button><button className="btn" onClick={verifyAesVector}>Verify AES test vector</button><button className="btn" onClick={loadRecommended}>Recommended sample</button><button className="btn" onClick={loadUnsafe}>Unsafe sample</button><button className="btn" onClick={loadNistAesVector}>NIST-style vector</button><Link className="btn" to="/algorithms/symmetric/aes-128-step">Open internal operations</Link><button className="btn" onClick={() => setKey(randomHex(keyBits / 8))}>Random {size} key</button><button className="btn" onClick={() => setIv(randomHex(mode === "GCM" ? 12 : 16))}>Random IV</button></div>
+            {testVectorMessage && <div className={`rounded-md border p-3 text-sm font-semibold ${testVectorMessage.startsWith("PASS") ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"}`}>{testVectorMessage}</div>}
           </div>
         </InputPanel>
         <OutputPanel title="AES output block">

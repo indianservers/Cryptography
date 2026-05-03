@@ -1,11 +1,12 @@
 import { Suspense, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { BookOpen, Box, Braces, ChartBar, ChevronDown, Cpu, Database, FileKey, Fingerprint, Gauge, Hash, KeyRound, Layers, LockKeyhole, Network, Search, Shield, Shuffle, SquareCode, Waves, Zap } from "lucide-react";
+import { BookOpen, Box, Braces, ChartBar, ChevronDown, Cpu, Database, FileKey, Fingerprint, Gauge, Hash, KeyRound, Layers, LockKeyhole, Menu, Network, Search, Shield, Shuffle, SquareCode, Waves, X, Zap } from "lucide-react";
 import { navigationCategories, navigationItems } from "../data/navigation";
 import { SecurityStatusBadge } from "../components/common/SecurityStatusBadge";
 import { ImplementationBadge } from "../components/common/ImplementationBadge";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { PrivacyBanner } from "../components/common/PrivacyBanner";
+import { PageChrome } from "../components/common/PageChrome";
 
 const icons = { Shield, BookOpen, LockKeyhole, Waves, KeyRound, Fingerprint, Hash, FileKey, Database, Network, ChartBar, Zap, Box, Layers, SquareCode, Braces, Shuffle, Gauge, Cpu };
 
@@ -35,6 +36,7 @@ export default function RootLayout() {
   const location = useLocation();
   const [query, setQuery] = useState("");
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const grouped = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -46,10 +48,10 @@ export default function RootLayout() {
 
   return (
     <div className="min-h-screen bg-slate-100 text-ink">
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-80 border-r border-slate-200 bg-white lg:flex lg:flex-col">
+      <aside className={`fixed inset-y-0 left-0 z-40 w-80 border-r border-slate-200 bg-white transition lg:z-20 lg:flex lg:flex-col ${mobileOpen ? "flex flex-col" : "hidden lg:flex"}`}>
         <Link to="/" className="border-b border-slate-200 px-5 py-4">
           <div className="text-xs font-semibold uppercase tracking-wide text-cyan-700">Browser-only lab</div>
-          <div className="text-xl font-bold">Mega Cryptography Suite</div>
+          <div className="flex items-center justify-between gap-2"><span className="text-xl font-bold">Mega Cryptography Suite</span><button className="icon-btn lg:hidden" onClick={(event) => { event.preventDefault(); setMobileOpen(false); }}><X /></button></div>
         </Link>
         <div className="p-4">
           <label className="flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm">
@@ -100,11 +102,12 @@ export default function RootLayout() {
       </aside>
       <main className="lg:pl-80">
         <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
-          <div className="font-bold">Mega Cryptography Suite</div>
+          <div className="flex items-center justify-between"><div className="font-bold">Mega Cryptography Suite</div><button className="icon-btn" onClick={() => setMobileOpen(true)}><Menu /></button></div>
         </div>
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <PrivacyBanner />
           <Breadcrumbs />
+          <PageChrome />
           <Suspense fallback={<div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">Loading cryptography module...</div>}>
             <Outlet />
           </Suspense>

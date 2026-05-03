@@ -9,6 +9,7 @@ const webCryptoRoutes = new Set([
   "/algorithms/mac/hmac",
   "/algorithms/kdf/pbkdf2",
   "/algorithms/tools/benchmark",
+  "/algorithms/tools/audit",
   "/algorithms/tools/random-bytes-generator",
 ]);
 
