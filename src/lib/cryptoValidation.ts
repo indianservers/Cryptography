@@ -19,9 +19,11 @@ export function validateAesFields({ keyHex, keyBytes, ivHex, mode }: { keyHex: s
   const issues: ValidationIssue[] = [];
   const key = parseHexStrict(keyHex, keyBytes);
   if (!key.ok) key.errors.forEach((message) => issues.push({ field: "Key", message, severity: "error" }));
-  const ivExpected = mode === "GCM" ? 12 : 16;
-  const iv = parseHexStrict(ivHex, ivExpected);
-  if (!iv.ok) iv.errors.forEach((message) => issues.push({ field: mode === "GCM" ? "Nonce" : "IV", message, severity: "error" }));
+  if (mode !== "ECB") {
+    const ivExpected = mode === "GCM" ? 12 : 16;
+    const iv = parseHexStrict(ivHex, ivExpected);
+    if (!iv.ok) iv.errors.forEach((message) => issues.push({ field: mode === "GCM" ? "Nonce" : "IV", message, severity: "error" }));
+  }
   if (mode === "ECB") issues.push({ field: "Mode", message: "ECB leaks repeated plaintext blocks and should only be used as an educational demo.", severity: "warning" });
   if (mode === "CTR" || mode === "GCM") issues.push({ field: "Nonce", message: `${mode} requires nonce/counter uniqueness for every encryption under the same key.`, severity: "warning" });
   return issues;

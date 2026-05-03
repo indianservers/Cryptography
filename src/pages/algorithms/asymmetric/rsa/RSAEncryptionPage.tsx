@@ -3,26 +3,28 @@ import { PageHeader } from "../../../../components/common/PageHeader";
 import { Card, Field, ValueRow } from "../../../../components/common/Field";
 import { WarningBadge } from "../../../../components/common/WarningBadge";
 import { ExportReportButton } from "../../../../components/common/ExportReportButton";
+import { ErrorSummary } from "../../../../components/common/ErrorSummary";
 import { modPow, modPowTrace } from "../../../../lib/cryptoDemos";
+import { parseBigIntStrict } from "../../../../lib/bigintValidation";
 
 export default function RSAEncryptionPage() {
   const [message, setMessage] = useState("42");
   const [e, setE] = useState("17");
   const [n, setN] = useState("3233");
   const result = useMemo(() => {
-    try {
-      const mValue = BigInt(message);
-      const eValue = BigInt(e);
-      const nValue = BigInt(n);
-      return { ok: true as const, mValue, eValue, nValue, cipher: modPow(mValue, eValue, nValue), trace: modPowTrace(mValue, eValue, nValue) };
-    } catch (error) {
-      return { ok: false as const, error: error instanceof Error ? error.message : "Invalid integer input" };
-    }
+    const parsed = [parseBigIntStrict(message, "Message", { min: 0n }), parseBigIntStrict(e, "Public exponent", { min: 1n }), parseBigIntStrict(n, "Modulus", { min: 2n })];
+    const errors = parsed.filter((item) => !item.ok).map((item, index) => ({ field: ["Message", "Exponent", "Modulus"][index], message: item.error, severity: "error" as const }));
+    if (errors.length) return { ok: false as const, error: "Invalid integer input", errors };
+    const [mValue, eValue, nValue] = parsed.map((item) => item.value);
+    if (mValue >= nValue) errors.push({ field: "Message", message: "Raw RSA requires m < n.", severity: "error" as const });
+    if (errors.length) return { ok: false as const, error: "Invalid RSA values", errors };
+    return { ok: true as const, mValue, eValue, nValue, cipher: modPow(mValue, eValue, nValue), trace: modPowTrace(mValue, eValue, nValue) };
   }, [message, e, n]);
 
   return (
     <div className="space-y-6">
       <PageHeader title="RSA Encryption" category="Public Key Cryptography" status="Educational">Compute real small-number RSA encryption as c = m^e mod n and inspect square-and-multiply.</PageHeader>
+      {!result.ok && <ErrorSummary issues={result.errors} />}
       <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
         <Card title="Public-key inputs">
           <div className="grid gap-4">

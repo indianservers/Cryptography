@@ -34,6 +34,14 @@ export const navigationItems: NavigationItem[] = algorithmMetadata.map(({ label,
   securityStatus: "Educational",
   implementationStatus: "Real",
   browserSupport: "Custom TypeScript",
+}, {
+  label: "Global Test Vectors",
+  category: "Benchmark and Comparison",
+  icon: "Gauge",
+  route: "/algorithms/tools/test-vectors",
+  securityStatus: "Educational",
+  implementationStatus: "Real",
+  browserSupport: "Mixed",
 }]);
 
 export const navigationCategories = [

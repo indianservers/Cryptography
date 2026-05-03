@@ -21,6 +21,14 @@
   .dark-table tr { @apply border-slate-800; }
   .compact-table th, .compact-table td { @apply px-2 py-1 text-xs; }
   .changed-byte { animation: changedPulse 1.6s ease-in-out infinite; }
+  body.compact-mode section, body.compact-mode header { @apply p-3; }
+  body.compact-mode .field { @apply px-2 py-1 text-xs; }
+  body.compact-mode table th, body.compact-mode table td { @apply px-2 py-1 text-xs; }
+  body.dark-tables table { @apply bg-slate-950 text-slate-100; }
+  body.dark-tables thead { @apply bg-slate-900 text-slate-100; }
+  body.dark-tables tbody tr { @apply border-slate-800; }
+  body.dark-tables tbody tr:nth-child(even) { @apply bg-slate-900/60; }
+  table thead { position: sticky; top: 0; z-index: 1; }
 }
 
 @keyframes changedPulse {

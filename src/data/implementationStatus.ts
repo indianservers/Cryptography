@@ -10,6 +10,7 @@ const webCryptoRoutes = new Set([
   "/algorithms/kdf/pbkdf2",
   "/algorithms/tools/benchmark",
   "/algorithms/tools/audit",
+  "/algorithms/tools/test-vectors",
   "/algorithms/tools/random-bytes-generator",
 ]);
 

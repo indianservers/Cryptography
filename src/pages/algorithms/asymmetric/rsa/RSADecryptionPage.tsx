@@ -3,26 +3,28 @@ import { PageHeader } from "../../../../components/common/PageHeader";
 import { Card, Field, ValueRow } from "../../../../components/common/Field";
 import { WarningBadge } from "../../../../components/common/WarningBadge";
 import { ExportReportButton } from "../../../../components/common/ExportReportButton";
+import { ErrorSummary } from "../../../../components/common/ErrorSummary";
 import { modPow, modPowTrace } from "../../../../lib/cryptoDemos";
+import { parseBigIntStrict } from "../../../../lib/bigintValidation";
 
 export default function RSADecryptionPage() {
   const [cipher, setCipher] = useState("2557");
   const [d, setD] = useState("2753");
   const [n, setN] = useState("3233");
   const result = useMemo(() => {
-    try {
-      const cValue = BigInt(cipher);
-      const dValue = BigInt(d);
-      const nValue = BigInt(n);
-      return { ok: true as const, cValue, dValue, nValue, message: modPow(cValue, dValue, nValue), trace: modPowTrace(cValue, dValue, nValue) };
-    } catch (error) {
-      return { ok: false as const, error: error instanceof Error ? error.message : "Invalid integer input" };
-    }
+    const parsed = [parseBigIntStrict(cipher, "Cipher", { min: 0n }), parseBigIntStrict(d, "Private exponent", { min: 1n }), parseBigIntStrict(n, "Modulus", { min: 2n })];
+    const errors = parsed.filter((item) => !item.ok).map((item, index) => ({ field: ["Cipher", "Private exponent", "Modulus"][index], message: item.error, severity: "error" as const }));
+    if (errors.length) return { ok: false as const, error: "Invalid integer input", errors };
+    const [cValue, dValue, nValue] = parsed.map((item) => item.value);
+    if (cValue >= nValue) errors.push({ field: "Cipher", message: "Raw RSA requires c < n.", severity: "error" as const });
+    if (errors.length) return { ok: false as const, error: "Invalid RSA values", errors };
+    return { ok: true as const, cValue, dValue, nValue, message: modPow(cValue, dValue, nValue), trace: modPowTrace(cValue, dValue, nValue) };
   }, [cipher, d, n]);
 
   return (
     <div className="space-y-6">
       <PageHeader title="RSA Decryption" category="Public Key Cryptography" status="Educational">Recover a small educational RSA message as m = c^d mod n and follow the private exponent trace.</PageHeader>
+      {!result.ok && <ErrorSummary issues={result.errors} />}
       <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
         <Card title="Private-key inputs">
           <div className="grid gap-4">

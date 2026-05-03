@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { navigationCategories, navigationItems } from "../../../data/navigation";
 import { BrowserSupportBadge, ImplementationBadge } from "../../../components/common/ImplementationBadge";
@@ -5,12 +6,22 @@ import { SecurityStatusBadge } from "../../../components/common/SecurityStatusBa
 import { PageHeader } from "../../../components/common/PageHeader";
 
 export default function AuditPage() {
+  const [filter, setFilter] = useState("All");
   const real = navigationItems.filter((item) => item.implementationStatus === "Real").length;
   const substitute = navigationItems.length - real;
   const unsafe = navigationItems.filter((item) => item.securityStatus === "Unsafe" || item.securityStatus === "Deprecated").length;
   const webCrypto = navigationItems.filter((item) => item.browserSupport === "Web Crypto").length;
   const custom = navigationItems.filter((item) => item.browserSupport === "Custom TypeScript").length;
   const educational = navigationItems.filter((item) => item.browserSupport === "Educational Substitute").length;
+  const filteredItems = useMemo(() => navigationItems.filter((item) => {
+    if (filter === "All") return true;
+    if (filter === "Real") return item.implementationStatus === "Real";
+    if (filter === "Substitute") return item.implementationStatus !== "Real";
+    if (filter === "Unsafe") return item.securityStatus === "Unsafe" || item.securityStatus === "Deprecated";
+    if (filter === "Web Crypto") return item.browserSupport === "Web Crypto" || item.browserSupport === "Mixed";
+    if (filter === "Custom TypeScript") return item.browserSupport === "Custom TypeScript";
+    return true;
+  }), [filter]);
 
   return (
     <div className="space-y-6">
@@ -40,11 +51,17 @@ export default function AuditPage() {
         </div>
       </section>
       <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold">Page Inventory</h2>
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Page Inventory</h2>
+            <p className="mt-1 text-sm text-slate-600">Filter by implementation quality, safety status, and browser primitive coverage.</p>
+          </div>
+          <label className="label">Audit filter<select className="field mt-1" value={filter} onChange={(event) => setFilter(event.target.value)}><option>All</option><option>Real</option><option>Substitute</option><option>Unsafe</option><option>Web Crypto</option><option>Custom TypeScript</option></select></label>
+        </div>
         <div className="overflow-auto rounded-md border border-slate-200">
           <table className="w-full text-sm">
             <thead className="bg-slate-100"><tr><th className="p-2 text-left">Page</th><th className="p-2 text-left">Category</th><th className="p-2 text-left">Implementation</th><th className="p-2 text-left">Support</th><th className="p-2 text-left">Security</th></tr></thead>
-            <tbody>{navigationItems.map((item) => <tr key={item.route} className="border-t border-slate-100"><td className="p-2"><Link className="font-semibold text-cyan-700 hover:text-cyan-900" to={item.route}>{item.label}</Link></td><td className="p-2">{item.category}</td><td className="p-2"><ImplementationBadge status={item.implementationStatus ?? "Substitute"} compact /></td><td className="p-2"><BrowserSupportBadge support={item.browserSupport ?? "Educational Substitute"} compact /></td><td className="p-2"><SecurityStatusBadge status={item.securityStatus} compact /></td></tr>)}</tbody>
+            <tbody>{filteredItems.map((item) => <tr key={item.route} className="border-t border-slate-100"><td className="p-2"><Link className="font-semibold text-cyan-700 hover:text-cyan-900" to={item.route}>{item.label}</Link></td><td className="p-2">{item.category}</td><td className="p-2"><ImplementationBadge status={item.implementationStatus ?? "Substitute"} compact /></td><td className="p-2"><BrowserSupportBadge support={item.browserSupport ?? "Educational Substitute"} compact /></td><td className="p-2"><SecurityStatusBadge status={item.securityStatus} compact /></td></tr>)}</tbody>
           </table>
         </div>
       </section>

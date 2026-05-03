@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { findAlgorithm } from "../../data/algorithmMetadata";
 import { navigationItems } from "../../data/navigation";
+import { DisplayControls } from "./DisplayControls";
 
 const recentKey = "mega-crypto-recent-routes";
 
@@ -37,6 +38,7 @@ export function PageChrome() {
           <button className="btn" onClick={() => document.body.classList.toggle("focus-mode")}>Focus mode</button>
           <button className="btn" onClick={() => setShowShortcuts(true)}>Shortcuts</button>
           <button className="btn" onClick={() => setShowGlossary(true)}>Glossary</button>
+          <DisplayControls />
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
           <span className="font-semibold text-slate-700">Recent:</span>

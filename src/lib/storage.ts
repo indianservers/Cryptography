@@ -32,3 +32,23 @@ export async function listExperiments(): Promise<SavedExperiment[]> {
   });
 }
 
+export async function deleteExperiment(id: string) {
+  const db = await openExperimentDb();
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(storeName, "readwrite");
+    tx.objectStore(storeName).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function importExperiments(experiments: SavedExperiment[]) {
+  const db = await openExperimentDb();
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(storeName, "readwrite");
+    const store = tx.objectStore(storeName);
+    experiments.forEach((experiment) => store.put(experiment));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}

@@ -11,9 +11,11 @@ import { DownloadButton } from "../../../../components/common/DownloadButton";
 import { ExportReportButton } from "../../../../components/common/ExportReportButton";
 import { ColorLegend } from "../../../../components/common/ColorLegend";
 import { CopyAsMenu } from "../../../../components/common/CopyAsMenu";
+import { ErrorSummary } from "../../../../components/common/ErrorSummary";
 import { RoundTimeline } from "../../../../components/visualization/RoundTimeline";
 import { AvalancheChart } from "../../../../components/visualization/AvalancheChart";
 import { randomHex, textToBinary, textToHex, hexPairs } from "../../../../lib/format";
+import { explainCryptoError, validateAesFields } from "../../../../lib/cryptoValidation";
 import { buildAesSteps, hexByte, hexWord } from "./aesEducationalCore";
 import { aesSBox } from "./aesTables";
 import { vectorsFor } from "../../../../data/testVectors";
@@ -117,6 +119,8 @@ export default function AESPage() {
   const keyBits = keyBitsFromSize(size);
   const requiredKeyHexLength = keyBits / 4;
   const cleanedKey = cleanUserHex(key);
+  const aesIssues = validateAesFields({ keyHex: key, keyBytes: keyBits / 8, ivHex: iv, mode });
+  const hasBlockingValidation = aesIssues.some((issue) => issue.severity === "error");
   const keyIsValid = cleanedKey.length === requiredKeyHexLength;
   const keyValidationText = keyIsValid ? `${size} key accepted: ${keyBits / 8} bytes.` : `${size} requires exactly ${requiredKeyHexLength} hex characters (${keyBits / 8} bytes). Current key has ${cleanedKey.length}.`;
   const ivHexLength = cleanUserHex(iv).length;
@@ -153,8 +157,8 @@ export default function AESPage() {
     return { name: "AES-CBC", iv: ivBytes.slice(0, 16) };
   };
   const encryptWithWebCrypto = async () => {
-    if (!keyIsValid) {
-      setCryptoMessage(keyValidationText);
+    if (hasBlockingValidation) {
+      setCryptoMessage("Fix the validation summary before running Web Crypto encryption.");
       setCipher("");
       return;
     }
@@ -181,13 +185,13 @@ export default function AESPage() {
       }
       setCryptoMessage(`Encrypted locally with Web Crypto ${size}-${mode}. The internal visualizer below traces the first 16-byte block.`);
     } catch (error) {
-      setCryptoMessage(error instanceof Error ? error.message : "Web Crypto encryption failed.");
+      setCryptoMessage(explainCryptoError(error));
       setCipher("");
     }
   };
   const decryptWithWebCrypto = async () => {
-    if (!keyIsValid) {
-      setCryptoMessage(keyValidationText);
+    if (hasBlockingValidation) {
+      setCryptoMessage("Fix the validation summary before running Web Crypto decryption.");
       return;
     }
     const ciphertextHex = cleanUserHex(cipherInput || cipher);
@@ -208,7 +212,7 @@ export default function AESPage() {
       const unpadded = mode === "CBC" ? removeBlockPadding(decrypted, padding) : decrypted;
       setCryptoMessage(`Decrypted locally with Web Crypto ${size}-${mode}: ${new TextDecoder().decode(unpadded)}`);
     } catch (error) {
-      setCryptoMessage(error instanceof Error ? error.message : "Web Crypto decryption failed.");
+      setCryptoMessage(explainCryptoError(error));
     }
   };
   const loadNistAesVector = () => {
@@ -239,7 +243,7 @@ export default function AESPage() {
       setCipherInput(actual);
       setTestVectorMessage(actual === expected ? `PASS: ${vector.name}` : `FAIL: expected ${expected}, got ${actual}`);
     } catch (error) {
-      setTestVectorMessage(error instanceof Error ? error.message : "AES vector verification failed.");
+      setTestVectorMessage(explainCryptoError(error));
     }
   };
   const loadRecommended = () => {
@@ -266,6 +270,7 @@ export default function AESPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="AES Workbench" category="Symmetric Cryptography" status="Modern">Explore AES block encryption, Web Crypto backed modes, and a custom educational round visualizer.</PageHeader>
+      <ErrorSummary issues={aesIssues} />
       <div className="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
         <InputPanel title="AES inputs and settings">
           <div className="grid gap-4">
