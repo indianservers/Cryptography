@@ -1,5 +1,6 @@
 import type { NavigationItem } from "../types";
 import { algorithmMetadata } from "./algorithmMetadata";
+import { getBrowserSupport, getImplementationStatus } from "./implementationStatus";
 
 export const navigationItems: NavigationItem[] = algorithmMetadata.map(({ label, category, icon, route, securityStatus }) => ({
   label,
@@ -7,6 +8,8 @@ export const navigationItems: NavigationItem[] = algorithmMetadata.map(({ label,
   icon: icon ?? "Shield",
   route,
   securityStatus,
+  implementationStatus: getImplementationStatus(route),
+  browserSupport: getBrowserSupport(route),
 }));
 
 export const navigationCategories = [
@@ -30,4 +33,3 @@ export const navigationCategories = [
   "Saved Experiments",
   "Export Center",
 ];
-

@@ -1,4 +1,6 @@
 export type SecurityStatus = "Modern" | "Legacy" | "Deprecated" | "Educational" | "Unsafe";
+export type ImplementationStatus = "Real" | "Educational" | "Substitute";
+export type BrowserSupport = "Web Crypto" | "Custom TypeScript" | "Educational Substitute" | "Mixed";
 
 export interface NavigationItem {
   label: string;
@@ -6,6 +8,8 @@ export interface NavigationItem {
   icon?: string;
   route: string;
   securityStatus: SecurityStatus;
+  implementationStatus?: ImplementationStatus;
+  browserSupport?: BrowserSupport;
 }
 
 export interface AlgorithmMetadata extends NavigationItem {
@@ -26,4 +30,3 @@ export interface SavedExperiment {
   output: unknown;
   steps: unknown[];
 }
-
