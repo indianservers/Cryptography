@@ -12,9 +12,90 @@ import { ExportReportButton } from "../../../../components/common/ExportReportBu
 import { RoundTimeline } from "../../../../components/visualization/RoundTimeline";
 import { AvalancheChart } from "../../../../components/visualization/AvalancheChart";
 import { randomHex, textToBinary, textToHex, hexPairs } from "../../../../lib/format";
-import { buildAes128Steps, hexByte, hexWord } from "./aesEducationalCore";
+import { buildAesSteps, hexByte, hexWord } from "./aesEducationalCore";
+import { aesSBox } from "./aesTables";
 
 const hexToBytes = (value: string) => new Uint8Array(hexPairs(value).map((byte) => parseInt(byte, 16)));
+const bytesToHex = (value: Uint8Array) => Array.from(value, (byte) => byte.toString(16).padStart(2, "0")).join("");
+const toArrayBuffer = (value: Uint8Array) => value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) as ArrayBuffer;
+type AesKeyBits = 128 | 192 | 256;
+const keyBitsFromSize = (value: string): AesKeyBits => value === "AES-256" ? 256 : value === "AES-192" ? 192 : 128;
+const cleanUserHex = (value: string) => value.replace(/[^0-9a-f]/gi, "");
+const sBoxRows = Array.from({ length: 16 }, (_, row) => Array.from({ length: 16 }, (_, col) => aesSBox[row * 16 + col]));
+
+function applyBlockPadding(data: Uint8Array, padding: string) {
+  const remainder = data.length % 16;
+  if (padding === "No padding") {
+    if (remainder !== 0) throw new Error("AES-CBC with no padding needs plaintext length to be a multiple of 16 bytes.");
+    return data;
+  }
+  if (padding === "Zero padding") {
+    if (remainder === 0) return data;
+    const output = new Uint8Array(data.length + 16 - remainder);
+    output.set(data);
+    return output;
+  }
+  const padLength = remainder === 0 ? 16 : 16 - remainder;
+  const output = new Uint8Array(data.length + padLength);
+  output.set(data);
+  output.fill(padLength, data.length);
+  return output;
+}
+
+function removeBlockPadding(data: Uint8Array, padding: string) {
+  if (padding === "No padding") return data;
+  if (padding === "Zero padding") {
+    let end = data.length;
+    while (end > 0 && data[end - 1] === 0) end -= 1;
+    return data.slice(0, end);
+  }
+  const padLength = data[data.length - 1];
+  if (padLength < 1 || padLength > 16) throw new Error("Invalid PKCS#7 padding byte in decrypted block.");
+  for (let index = data.length - padLength; index < data.length; index += 1) {
+    if (data[index] !== padLength) throw new Error("Invalid PKCS#7 padding structure.");
+  }
+  return data.slice(0, data.length - padLength);
+}
+
+function SBoxLookupPanel({ byteMap }: { byteMap?: { index: number; before: number; after: number; row: number; col: number }[] }) {
+  const selected = byteMap?.[0];
+  return (
+    <div className="space-y-3">
+      <div>
+        <h3 className="text-sm font-semibold">S-box lookup</h3>
+        <p className="mt-1 text-xs text-slate-600">For SubBytes, the high nibble selects the row and the low nibble selects the column. The highlighted byte below is the first byte transformed in this step.</p>
+      </div>
+      <div className="overflow-auto rounded-md border border-slate-200 bg-white">
+        <table className="w-full min-w-[36rem] text-center font-mono text-[11px]">
+          <thead className="bg-slate-100">
+            <tr><th className="p-1 text-slate-500">x</th>{Array.from({ length: 16 }, (_, col) => <th key={col} className="p-1 text-slate-500">{col.toString(16)}</th>)}</tr>
+          </thead>
+          <tbody>
+            {sBoxRows.map((rowValues, row) => (
+              <tr key={row} className="border-t border-slate-100">
+                <th className="bg-slate-50 p-1 text-slate-500">{row.toString(16)}</th>
+                {rowValues.map((value, col) => {
+                  const active = selected?.row === row && selected.col === col;
+                  return <td key={`${row}-${col}`} className={`p-1 ${active ? "bg-cyan-200 font-bold text-cyan-950" : "text-slate-700"}`}>{hexByte(value)}</td>;
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {byteMap ? (
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {byteMap.map((item) => (
+            <div key={item.index} className="rounded-md border border-slate-200 bg-slate-50 p-2 text-xs">
+              <div className="font-semibold">byte {item.index}</div>
+              <div className="font-mono">{hexByte(item.before)} {"->"} S[{item.row.toString(16)}][{item.col.toString(16)}] {"->"} {hexByte(item.after)}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export default function AESPage() {
   const [plain, setPlain] = useState("Attack at dawn!!");
@@ -25,45 +106,89 @@ export default function AESPage() {
   const [padding, setPadding] = useState("PKCS#7");
   const [cipher, setCipher] = useState("");
   const [cryptoMessage, setCryptoMessage] = useState("Web Crypto output appears after encryption.");
+  const keyBits = keyBitsFromSize(size);
+  const requiredKeyHexLength = keyBits / 4;
+  const cleanedKey = cleanUserHex(key);
+  const keyIsValid = cleanedKey.length === requiredKeyHexLength;
+  const keyValidationText = keyIsValid ? `${size} key accepted: ${keyBits / 8} bytes.` : `${size} requires exactly ${requiredKeyHexLength} hex characters (${keyBits / 8} bytes). Current key has ${cleanedKey.length}.`;
   const inputHex = textToHex(plain).padEnd(32, "0").slice(0, 32);
   const matrix = hexPairs(inputHex).slice(0, 16);
-  const aesTrace = useMemo(() => buildAes128Steps(inputHex, key), [inputHex, key]);
+  const aesTrace = useMemo(() => buildAesSteps(inputHex, key, keyBits), [inputHex, key, keyBits]);
   const roundKeys = useMemo(() => aesTrace.roundKeys[0].map(hexByte), [aesTrace.roundKeys]);
-  const roundSummaries = useMemo(() => Array.from({ length: 11 }, (_, round) => {
+  const educationalCipher = useMemo(() => hexWord(aesTrace.ciphertext), [aesTrace.ciphertext]);
+  const roundSummaries = useMemo(() => Array.from({ length: aesTrace.rounds + 1 }, (_, round) => {
     const roundSteps = aesTrace.steps.filter((step) => step.round === round);
     const stateStep = [...roundSteps].reverse().find((step) => step.operation === "AddRoundKey") ?? roundSteps[roundSteps.length - 1];
     return {
       round,
       key: aesTrace.roundKeys[round],
       state: stateStep.state,
-      stateTitle: round === 0 ? "After initial AddRoundKey" : round === 10 ? "Final ciphertext" : `After round ${round} AddRoundKey`,
-      operations: roundSteps.map((step) => ({ operation: step.operation, state: step.state, title: step.title })),
+      stateTitle: round === 0 ? "After initial AddRoundKey" : round === aesTrace.rounds ? "Final ciphertext" : `After round ${round} AddRoundKey`,
+      operations: roundSteps.map((step) => ({ operation: step.operation, state: step.state, title: step.title, byteMap: step.byteMap })),
     };
-  }), [aesTrace.roundKeys, aesTrace.steps]);
-  const pseudoCipher = useMemo(() => hexPairs(inputHex).map((b, index) => (parseInt(b, 16) ^ parseInt(roundKeys[index] ?? "00", 16)).toString(16).padStart(2, "0")).join(""), [inputHex, roundKeys]);
+  }), [aesTrace.roundKeys, aesTrace.rounds, aesTrace.steps]);
+  const getCryptoAlgorithm = (ivBytes: Uint8Array) => {
+    if (mode === "GCM") {
+      if (ivBytes.length < 12) throw new Error("AES-GCM needs a 12-byte nonce, entered as at least 24 hex characters.");
+      return { name: "AES-GCM", iv: ivBytes.slice(0, 12) };
+    }
+    if (mode === "CTR") {
+      if (ivBytes.length < 16) throw new Error("AES-CTR needs a 16-byte counter block, entered as at least 32 hex characters.");
+      return { name: "AES-CTR", counter: ivBytes.slice(0, 16), length: 64 };
+    }
+    if (ivBytes.length < 16) throw new Error("AES-CBC needs a 16-byte IV, entered as at least 32 hex characters.");
+    return { name: "AES-CBC", iv: ivBytes.slice(0, 16) };
+  };
   const encryptWithWebCrypto = async () => {
+    if (!keyIsValid) {
+      setCryptoMessage(keyValidationText);
+      setCipher("");
+      return;
+    }
     if (!["GCM", "CBC", "CTR"].includes(mode)) {
       setCryptoMessage(`${mode} is shown as an educational mode here; Web Crypto does not expose AES-${mode}.`);
-      setCipher(pseudoCipher);
+      setCipher(educationalCipher);
       return;
     }
     try {
-      const keyBytes = hexToBytes(key).slice(0, size === "AES-256" ? 32 : size === "AES-192" ? 24 : 16);
+      const keyBytes = hexToBytes(cleanedKey);
       const cryptoKey = await crypto.subtle.importKey("raw", keyBytes, "AES-" + mode, false, ["encrypt"]);
-      const data = new TextEncoder().encode(plain);
+      const rawData = new TextEncoder().encode(plain);
+      const data = mode === "CBC" ? applyBlockPadding(rawData, padding) : rawData;
       const ivBytes = hexToBytes(iv);
-      const algorithm = mode === "GCM"
-        ? { name: "AES-GCM", iv: ivBytes.slice(0, 12) }
-        : mode === "CTR"
-          ? { name: "AES-CTR", counter: ivBytes.slice(0, 16), length: 64 }
-          : { name: "AES-CBC", iv: ivBytes.slice(0, 16) };
-      const encrypted = await crypto.subtle.encrypt(algorithm, cryptoKey, data);
-      const hex = Array.from(new Uint8Array(encrypted), (byte) => byte.toString(16).padStart(2, "0")).join("");
+      const algorithm = getCryptoAlgorithm(ivBytes);
+      const encrypted = await crypto.subtle.encrypt(algorithm, cryptoKey, toArrayBuffer(data));
+      const hex = bytesToHex(new Uint8Array(encrypted));
       setCipher(hex);
-      setCryptoMessage(`Encrypted locally with Web Crypto AES-${mode}.`);
+      setCryptoMessage(`Encrypted locally with Web Crypto ${size}-${mode}. The internal visualizer below traces the first 16-byte block.`);
     } catch (error) {
       setCryptoMessage(error instanceof Error ? error.message : "Web Crypto encryption failed.");
-      setCipher(pseudoCipher);
+      setCipher("");
+    }
+  };
+  const decryptWithWebCrypto = async () => {
+    if (!keyIsValid) {
+      setCryptoMessage(keyValidationText);
+      return;
+    }
+    if (!cipher) {
+      setCryptoMessage("Encrypt first, or paste ciphertext into this page once a ciphertext input is added.");
+      return;
+    }
+    if (!["GCM", "CBC", "CTR"].includes(mode)) {
+      setCryptoMessage(`${mode} decrypt is educational-only here because Web Crypto does not expose AES-${mode}.`);
+      return;
+    }
+    try {
+      const keyBytes = hexToBytes(cleanedKey);
+      const cryptoKey = await crypto.subtle.importKey("raw", keyBytes, "AES-" + mode, false, ["decrypt"]);
+      const ivBytes = hexToBytes(iv);
+      const algorithm = getCryptoAlgorithm(ivBytes);
+      const decrypted = new Uint8Array(await crypto.subtle.decrypt(algorithm, cryptoKey, toArrayBuffer(hexToBytes(cipher))));
+      const unpadded = mode === "CBC" ? removeBlockPadding(decrypted, padding) : decrypted;
+      setCryptoMessage(`Decrypted locally with Web Crypto ${size}-${mode}: ${new TextDecoder().decode(unpadded)}`);
+    } catch (error) {
+      setCryptoMessage(error instanceof Error ? error.message : "Web Crypto decryption failed.");
     }
   };
   return (
@@ -74,29 +199,30 @@ export default function AESPage() {
           <div className="grid gap-4">
             <label className="label">Plaintext<textarea className="field mt-1 min-h-24" value={plain} onChange={(e) => setPlain(e.target.value)} /></label>
             <div className="grid gap-3 md:grid-cols-2"><label className="label">Key size<select className="field mt-1" value={size} onChange={(e) => setSize(e.target.value)}><option>AES-128</option><option>AES-192</option><option>AES-256</option></select></label><label className="label">Mode<select className="field mt-1" value={mode} onChange={(e) => setMode(e.target.value)}><option>ECB</option><option>CBC</option><option>CFB</option><option>OFB</option><option>CTR</option><option>GCM</option></select></label></div>
-            <label className="label">Key hex<input className="field mt-1 font-mono" value={key} onChange={(e) => setKey(e.target.value)} /></label>
+            <label className="label">Key hex<input className={`field mt-1 font-mono ${keyIsValid ? "" : "border-rose-300 bg-rose-50"}`} value={key} onChange={(e) => setKey(e.target.value)} /></label>
+            <div className={`rounded-md border p-3 text-sm ${keyIsValid ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}>{keyValidationText}</div>
             <label className="label">IV / nonce hex<input className="field mt-1 font-mono" value={iv} onChange={(e) => setIv(e.target.value)} /></label>
             <label className="label">Padding<select className="field mt-1" value={padding} onChange={(e) => setPadding(e.target.value)}><option>PKCS#7</option><option>Zero padding</option><option>No padding</option></select></label>
-            <div className="flex flex-wrap gap-2"><button className="btn" onClick={encryptWithWebCrypto}>Encrypt with Web Crypto where supported</button><Link className="btn" to="/algorithms/symmetric/aes-128-step">Open internal operations</Link><button className="btn">Decrypt</button><button className="btn" onClick={() => setKey(randomHex(size === "AES-256" ? 32 : size === "AES-192" ? 24 : 16))}>Random key</button><button className="btn" onClick={() => setIv(randomHex(16))}>Random IV</button></div>
+            <div className="flex flex-wrap gap-2"><button className="btn" onClick={encryptWithWebCrypto}>Encrypt</button><button className="btn" onClick={decryptWithWebCrypto}>Decrypt</button><Link className="btn" to="/algorithms/symmetric/aes-128-step">Open internal operations</Link><button className="btn" onClick={() => setKey(randomHex(keyBits / 8))}>Random {size} key</button><button className="btn" onClick={() => setIv(randomHex(16))}>Random IV</button></div>
           </div>
         </InputPanel>
         <OutputPanel title="AES output block">
-          <div className="space-y-4"><p className="text-sm text-slate-600">{cryptoMessage}</p><HexViewer value={cipher || pseudoCipher} /><CopyButton value={cipher || pseudoCipher} /><DownloadButton filename="aes-output.txt" value={cipher || pseudoCipher} /><div><h3 className="mb-2 font-semibold">Input as 4x4 state matrix</h3><MatrixView values={matrix} /></div><AvalancheChart changedBits={63} /></div>
+          <div className="space-y-4"><p className="text-sm text-slate-600">{cryptoMessage}</p><HexViewer value={cipher || educationalCipher} /><CopyButton value={cipher || educationalCipher} /><DownloadButton filename="aes-output.txt" value={cipher || educationalCipher} /><div><h3 className="mb-2 font-semibold">Input as 4x4 state matrix</h3><MatrixView values={matrix} /></div><AvalancheChart changedBits={63} /></div>
         </OutputPanel>
       </div>
-      <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="mb-4 text-lg font-semibold">Educational AES block visualizer</h2><RoundTimeline steps={["Input block", "Initial AddRoundKey", "SubBytes", "ShiftRows", "MixColumns", "AddRoundKey", "Final round without MixColumns", "Ciphertext"]} active={2} /><div className="mt-5 grid gap-5 lg:grid-cols-3"><div><h3 className="mb-2 font-semibold">Round 0 key matrix</h3><MatrixView values={roundKeys} changed={[0, 5, 10, 15]} /></div><div><h3 className="mb-2 font-semibold">Binary block</h3><pre className="max-h-72 overflow-auto rounded-md bg-slate-950 p-4 font-mono text-xs text-lime-100">{textToBinary(plain)}</pre></div><div><h3 className="mb-2 font-semibold">Key expansion notes</h3><p className="text-sm text-slate-600">RotWord, SubWord, Rcon, and XOR derive round keys K0 through K10. The table below shows the key and intermediate ciphertext/state for every round.</p></div></div></section>
+      <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="mb-4 text-lg font-semibold">Educational AES block visualizer</h2><RoundTimeline steps={["Input block", "Initial AddRoundKey", "SubBytes", "ShiftRows", "MixColumns", "AddRoundKey", "Final round without MixColumns", "Ciphertext"]} active={2} /><div className="mt-5 grid gap-5 lg:grid-cols-3"><div><h3 className="mb-2 font-semibold">Round 0 key matrix</h3><MatrixView values={roundKeys} changed={[0, 5, 10, 15]} /></div><div><h3 className="mb-2 font-semibold">Binary block</h3><pre className="max-h-72 overflow-auto rounded-md bg-slate-950 p-4 font-mono text-xs text-lime-100">{textToBinary(plain)}</pre></div><div><h3 className="mb-2 font-semibold">Key expansion notes</h3><p className="text-sm text-slate-600">{size} uses {aesTrace.rounds} encryption rounds and {aesTrace.rounds + 1} round keys. RotWord, SubWord, Rcon, and XOR derive the key schedule shown below.</p></div></div></section>
 
       <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">Round-by-round key and ciphertext states</h2>
-            <p className="mt-1 text-sm text-slate-600">This AES-128 educational trace uses the first 16 plaintext bytes and first 16 key bytes. Each row shows the expanded round key and the state after that round's AddRoundKey. Round 10 is the final ciphertext.</p>
+            <p className="mt-1 text-sm text-slate-600">This {size} educational trace uses one 16-byte plaintext block and the exact selected key size. Each row shows the expanded round key and the state after that round's AddRoundKey. Round {aesTrace.rounds} is the final ciphertext.</p>
           </div>
           <Link className="btn" to="/algorithms/symmetric/aes-128-step">Open step-by-step byte view</Link>
         </div>
         <div className="space-y-4">
           {roundSummaries.map((summary) => (
-            <details key={summary.round} className="rounded-md border border-slate-200 bg-slate-50 p-4" open={summary.round <= 2 || summary.round === 10}>
+            <details key={summary.round} className="rounded-md border border-slate-200 bg-slate-50 p-4" open={summary.round <= 2 || summary.round === aesTrace.rounds}>
               <summary className="cursor-pointer list-none">
                 <div className="grid gap-3 lg:grid-cols-[7rem_1fr_1fr]">
                   <div>
@@ -134,11 +260,16 @@ export default function AESPage() {
                   </div>
                 </div>
               </div>
+              {summary.operations.some((operation) => operation.operation === "SubBytes") ? (
+                <div className="mt-4 rounded-md border border-cyan-100 bg-cyan-50 p-4">
+                  <SBoxLookupPanel byteMap={summary.operations.find((operation) => operation.operation === "SubBytes")?.byteMap} />
+                </div>
+              ) : null}
             </details>
           ))}
         </div>
       </section>
-      <section className="grid gap-6 xl:grid-cols-2"><div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-semibold">Learning notes</h2><p className="mt-2 text-sm text-slate-600">AES works on a 4x4 byte state. SubBytes provides nonlinear substitution, ShiftRows moves bytes across columns, MixColumns diffuses each column, and AddRoundKey injects secret material.</p></div><div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-semibold">Mistakes and export</h2><WarningBadge>ECB leaks repeated blocks. GCM and CTR require nonce uniqueness under a key.</WarningBadge><div className="mt-4"><ExportReportButton title="AES" data={{ plain, key, iv, mode, size, padding, pseudoCipher }} /></div></div></section>
+      <section className="grid gap-6 xl:grid-cols-2"><div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-semibold">Learning notes</h2><p className="mt-2 text-sm text-slate-600">AES works on a 4x4 byte state. SubBytes provides nonlinear substitution from the real AES S-box, ShiftRows moves bytes across columns, MixColumns diffuses each column, and AddRoundKey injects the round key. AES-128 has 10 rounds, AES-192 has 12, and AES-256 has 14.</p></div><div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-semibold">Mistakes and export</h2><WarningBadge>ECB leaks repeated blocks. GCM and CTR require nonce uniqueness under a key. Web Crypto requires exact raw key length for the selected AES size.</WarningBadge><div className="mt-4"><ExportReportButton title="AES" data={{ plain, key, iv, mode, size, padding, educationalCipher, cipher }} /></div></div></section>
     </div>
   );
 }

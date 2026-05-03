@@ -73,20 +73,29 @@ const rotWord = (word: number[]) => [word[1], word[2], word[3], word[0]];
 const subWord = (word: number[]) => word.map((byte) => aesSBox[byte]);
 const xorWords = (a: number[], b: number[]) => a.map((byte, index) => byte ^ b[index]);
 
-export function expandAes128Key(key: number[]) {
+export function expandAesKey(key: number[], keySizeBits: 128 | 192 | 256 = 128) {
+  const nk = keySizeBits / 32;
+  const nr = nk + 6;
+  const totalWords = 4 * (nr + 1);
   const words: number[][] = [];
-  for (let index = 0; index < 4; index += 1) {
+  for (let index = 0; index < nk; index += 1) {
     words.push(key.slice(index * 4, index * 4 + 4));
   }
-  for (let index = 4; index < 44; index += 1) {
+  for (let index = nk; index < totalWords; index += 1) {
     let temp = [...words[index - 1]];
-    if (index % 4 === 0) {
+    if (index % nk === 0) {
       temp = subWord(rotWord(temp));
-      temp[0] ^= rcon[index / 4];
+      temp[0] ^= rcon[index / nk];
+    } else if (nk > 6 && index % nk === 4) {
+      temp = subWord(temp);
     }
-    words.push(xorWords(words[index - 4], temp));
+    words.push(xorWords(words[index - nk], temp));
   }
-  return Array.from({ length: 11 }, (_, round) => words.slice(round * 4, round * 4 + 4).flat());
+  return Array.from({ length: nr + 1 }, (_, round) => words.slice(round * 4, round * 4 + 4).flat());
+}
+
+export function expandAes128Key(key: number[]) {
+  return expandAesKey(key, 128);
 }
 
 function pushStep(steps: AesStep[], round: number, operation: AesStep["operation"], title: string, explanation: string, previousState: number[], state: number[], roundKey?: number[], byteMap?: AesStep["byteMap"]) {
@@ -103,10 +112,12 @@ function pushStep(steps: AesStep[], round: number, operation: AesStep["operation
   });
 }
 
-export function buildAes128Steps(plaintextHex: string, keyHex: string) {
+export function buildAesSteps(plaintextHex: string, keyHex: string, keySizeBits: 128 | 192 | 256 = 128) {
   const input = bytesFromHex(plaintextHex, 16);
-  const key = bytesFromHex(keyHex, 16);
-  const roundKeys = expandAes128Key(key);
+  const keyBytes = keySizeBits / 8;
+  const key = bytesFromHex(keyHex, keyBytes);
+  const roundKeys = expandAesKey(key, keySizeBits);
+  const finalRound = keySizeBits / 32 + 6;
   const steps: AesStep[] = [];
   let state = clone(input);
 
@@ -115,7 +126,7 @@ export function buildAes128Steps(plaintextHex: string, keyHex: string) {
   pushStep(steps, 0, "AddRoundKey", "Step 2: initial AddRoundKey", "Each state byte is XORed with round key 0 from the expanded key schedule.", state, next, roundKeys[0]);
   state = next;
 
-  for (let round = 1; round <= 9; round += 1) {
+  for (let round = 1; round < finalRound; round += 1) {
     const sub = subBytesDetailed(state);
     pushStep(steps, round, "SubBytes", `Round ${round}: SubBytes`, "Every byte is replaced through the real AES S-box. High nibble selects row; low nibble selects column.", state, sub.state, undefined, sub.byteMap);
     state = sub.state;
@@ -134,19 +145,23 @@ export function buildAes128Steps(plaintextHex: string, keyHex: string) {
   }
 
   const sub = subBytesDetailed(state);
-  pushStep(steps, 10, "SubBytes", "Round 10: SubBytes", "The final round still uses the S-box substitution.", state, sub.state, undefined, sub.byteMap);
+  pushStep(steps, finalRound, "SubBytes", `Round ${finalRound}: SubBytes`, "The final round still uses the S-box substitution.", state, sub.state, undefined, sub.byteMap);
   state = sub.state;
 
   next = shiftRows(state);
-  pushStep(steps, 10, "ShiftRows", "Round 10: ShiftRows", "The final round rotates rows just like earlier rounds.", state, next);
+  pushStep(steps, finalRound, "ShiftRows", `Round ${finalRound}: ShiftRows`, "The final round rotates rows just like earlier rounds.", state, next);
   state = next;
 
-  next = addRoundKey(state, roundKeys[10]);
-  pushStep(steps, 10, "AddRoundKey", "Round 10: final AddRoundKey", "The final round omits MixColumns and XORs round key 10 to produce ciphertext.", state, next, roundKeys[10]);
+  next = addRoundKey(state, roundKeys[finalRound]);
+  pushStep(steps, finalRound, "AddRoundKey", `Round ${finalRound}: final AddRoundKey`, `The final round omits MixColumns and XORs round key ${finalRound} to produce ciphertext.`, state, next, roundKeys[finalRound]);
   state = next;
-  pushStep(steps, 10, "Ciphertext", "Ciphertext", "This is the final AES block after all 10 AES-128 rounds.", state, state);
+  pushStep(steps, finalRound, "Ciphertext", "Ciphertext", `This is the final AES block after all ${finalRound} AES-${keySizeBits} rounds.`, state, state);
 
-  return { input, key, roundKeys, steps, ciphertext: state };
+  return { input, key, keySizeBits, rounds: finalRound, roundKeys, steps, ciphertext: state };
+}
+
+export function buildAes128Steps(plaintextHex: string, keyHex: string) {
+  return buildAesSteps(plaintextHex, keyHex, 128);
 }
 
 export function changedIndexes(previous: number[], current: number[]) {
