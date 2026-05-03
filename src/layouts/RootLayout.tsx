@@ -31,7 +31,7 @@ const categoryIcon: Record<string, keyof typeof icons> = {
 export default function RootLayout() {
   const location = useLocation();
   const [query, setQuery] = useState("");
-  const [closed, setClosed] = useState<Set<string>>(new Set());
+  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
 
   const grouped = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -57,13 +57,13 @@ export default function RootLayout() {
         <nav className="flex-1 overflow-y-auto px-3 pb-6">
           {grouped.map(({ category, items }) => {
             const Icon = icons[categoryIcon[category] ?? "Shield"];
-            const isClosed = closed.has(category);
+            const isOpen = openCategories.has(category);
             const hasActive = items.some((item) => location.pathname === item.route);
             return (
               <section key={category} className="mb-2">
                 <button
                   className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-semibold ${hasActive ? "bg-cyan-50 text-cyan-800" : "text-slate-700 hover:bg-slate-100"}`}
-                  onClick={() => setClosed((current) => {
+                  onClick={() => setOpenCategories((current) => {
                     const next = new Set(current);
                     next.has(category) ? next.delete(category) : next.add(category);
                     return next;
@@ -71,9 +71,9 @@ export default function RootLayout() {
                 >
                   <Icon className="h-4 w-4" />
                   <span className="flex-1">{category}</span>
-                  <ChevronDown className={`h-4 w-4 transition ${isClosed ? "-rotate-90" : ""}`} />
+                  <ChevronDown className={`h-4 w-4 transition ${isOpen ? "" : "-rotate-90"}`} />
                 </button>
-                {!isClosed && (
+                {isOpen && (
                   <div className="mt-1 space-y-1 pl-3">
                     {items.map((item) => (
                       <NavLink
@@ -105,4 +105,3 @@ export default function RootLayout() {
     </div>
   );
 }
-
