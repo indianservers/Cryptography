@@ -21,16 +21,16 @@ export function TopAlgorithmsMenu() {
   const items = topRoutes.map((top) => ({ ...top, item: navigationItems.find((nav) => nav.route === top.route) })).filter((entry) => entry.item);
 
   return (
-    <section className="mb-4 rounded-md border border-slate-200 bg-white p-3 shadow-sm">
+    <section className="top-algorithms-menu mb-4 hidden overflow-hidden rounded-md border border-slate-200 bg-white p-2 shadow-sm xl:block sm:p-3">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-sm font-bold uppercase tracking-wide text-slate-700">Top 10 Algorithms</h2>
-        <span className="text-xs text-slate-500">Curated quick access</span>
+        <span className="hidden text-xs text-slate-500 sm:inline">Curated quick access</span>
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
         {items.map(({ route, note, icon: Icon, item }) => {
           const active = location.pathname === route;
           return (
-            <Link key={route} to={route} className={`flex min-w-48 items-center gap-3 rounded-md border px-3 py-2 transition ${active ? "border-cyan-300 bg-cyan-50 text-cyan-900" : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"}`}>
+            <Link key={route} to={route} className={`flex min-h-10 min-w-40 items-center gap-2 rounded-md border px-3 py-2 transition sm:min-w-48 sm:gap-3 ${active ? "border-cyan-300 bg-cyan-50 text-cyan-900" : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"}`}>
               <Icon className="h-4 w-4 shrink-0" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold">{item?.label}</span>

@@ -4,14 +4,14 @@ const webCryptoRoutes = new Set([
   "/algorithms/symmetric/aes",
   "/algorithms/modes/ctr",
   "/algorithms/modes/gcm",
-  "/algorithms/hash/sha-2",
+  "/algorithms/hash/sha2",
   "/algorithms/hash/sha-256-step",
   "/algorithms/mac/hmac",
   "/algorithms/kdf/pbkdf2",
   "/algorithms/tools/benchmark",
   "/algorithms/tools/audit",
   "/algorithms/tools/test-vectors",
-  "/algorithms/tools/random-bytes-generator",
+  "/algorithms/tools/random-bytes",
 ]);
 
 const customRoutes = new Set([

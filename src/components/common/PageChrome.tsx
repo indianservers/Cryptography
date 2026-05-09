@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { findAlgorithm } from "../../data/algorithmMetadata";
 import { navigationItems } from "../../data/navigation";
 import { DisplayControls } from "./DisplayControls";
+import { AlgorithmComparisonMode } from "./AlgorithmComparisonMode";
 
 const recentKey = "mega-crypto-recent-routes";
 
@@ -11,6 +12,7 @@ export function PageChrome() {
   const algorithm = findAlgorithm(location.pathname);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
 
   useEffect(() => {
     document.title = algorithm ? `${algorithm.label} | ${algorithm.securityStatus} | Mega Cryptography Suite` : "Mega Cryptography Suite";
@@ -33,20 +35,22 @@ export function PageChrome() {
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-200 bg-white p-3 text-sm shadow-sm">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-200 bg-white p-2 text-sm shadow-sm sm:p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <button className="btn" onClick={() => document.body.classList.toggle("focus-mode")}>Focus mode</button>
-          <button className="btn" onClick={() => setShowShortcuts(true)}>Shortcuts</button>
-          <button className="btn" onClick={() => setShowGlossary(true)}>Glossary</button>
+          <button className="btn hidden sm:inline-flex" onClick={() => document.body.classList.toggle("focus-mode")}>Focus mode</button>
+          <button className="btn" onClick={() => setShowComparison(true)}>Compare</button>
+          <button className="btn hidden sm:inline-flex" onClick={() => setShowShortcuts(true)}>Shortcuts</button>
+          <button className="btn hidden sm:inline-flex" onClick={() => setShowGlossary(true)}>Glossary</button>
           <DisplayControls />
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+        <div className="hidden flex-wrap items-center gap-2 text-xs text-slate-600 md:flex">
           <span className="font-semibold text-slate-700">Recent:</span>
           {recent.length ? recent.map((item) => item && <a key={item.route} className="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50" href={item.route}>{item.label}</a>) : <span>None yet</span>}
         </div>
       </div>
+      <AlgorithmComparisonMode open={showComparison} onClose={() => setShowComparison(false)} />
       {showShortcuts && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 p-4" onClick={() => setShowShortcuts(false)}><div className="max-w-lg rounded-md bg-white p-5 shadow-xl" onClick={(event) => event.stopPropagation()}><h2 className="text-lg font-semibold">Keyboard Shortcuts</h2><div className="mt-4 grid gap-2 text-sm"><div><kbd className="rounded bg-slate-100 px-2 py-1 font-mono">?</kbd> Toggle shortcuts</div><div><kbd className="rounded bg-slate-100 px-2 py-1 font-mono">Alt+G</kbd> Toggle glossary</div><div><kbd className="rounded bg-slate-100 px-2 py-1 font-mono">Esc</kbd> Close browser dialogs where supported</div></div><button className="btn mt-5" onClick={() => setShowShortcuts(false)}>Close</button></div></div>}
-      {showGlossary && <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-md overflow-y-auto border-l border-slate-200 bg-white p-5 shadow-xl"><div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">Crypto Glossary</h2><button className="icon-btn" onClick={() => setShowGlossary(false)}>x</button></div><div className="space-y-3 text-sm text-slate-700">{[
+      {showGlossary && <aside className="fixed inset-y-0 right-0 z-50 w-[min(100vw,28rem)] overflow-y-auto border-l border-slate-200 bg-white p-4 shadow-xl sm:p-5"><div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">Crypto Glossary</h2><button className="icon-btn" onClick={() => setShowGlossary(false)}>x</button></div><div className="space-y-3 text-sm text-slate-700">{[
         ["Nonce", "A number used once. Reuse can break CTR, GCM, and stream ciphers."],
         ["IV", "Initialization vector. It starts a mode of operation and is often public but must follow mode rules."],
         ["Tag", "Authentication value proving ciphertext and AAD were not changed."],

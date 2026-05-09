@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { BookOpen, Box, Braces, ChartBar, ChevronDown, Cpu, Database, FileKey, Fingerprint, Gauge, Hash, KeyRound, Layers, LockKeyhole, Menu, Network, Search, Shield, Shuffle, SquareCode, Waves, X, Zap } from "lucide-react";
 import { navigationCategories, navigationItems } from "../data/navigation";
@@ -33,6 +33,18 @@ const categoryIcon: Record<string, keyof typeof icons> = {
   "Export Center": "ChartBar",
 };
 
+const categoryDisplay: Record<string, string> = {
+  "Classical Cryptography": "Classical",
+  "Symmetric Cryptography": "Symmetric",
+  "Block Ciphers": "Symmetric",
+  "Stream Ciphers": "Stream",
+  "Public Key Cryptography": "Asymmetric",
+  "Elliptic Curve Cryptography": "ECC",
+  "Hash Functions": "Hash",
+  "MAC Algorithms": "MAC",
+  "Key Derivation Functions": "KDF",
+};
+
 export default function RootLayout() {
   const location = useLocation();
   const [query, setQuery] = useState("");
@@ -43,18 +55,48 @@ export default function RootLayout() {
     const normalized = query.trim().toLowerCase();
     return navigationCategories.map((category) => ({
       category,
-      items: navigationItems.filter((item) => item.category === category && (!normalized || item.label.toLowerCase().includes(normalized) || item.securityStatus.toLowerCase().includes(normalized))),
+      items: navigationItems.filter((item) => {
+        const display = categoryDisplay[item.category] ?? item.category;
+        return item.category === category && (!normalized || item.label.toLowerCase().includes(normalized) || item.securityStatus.toLowerCase().includes(normalized) || display.toLowerCase().includes(normalized) || item.category.toLowerCase().includes(normalized));
+      }),
     })).filter((group) => group.items.length > 0);
   }, [query]);
 
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [mobileOpen]);
+
+  const closeMobileMenu = () => setMobileOpen(false);
+
   return (
     <div className="min-h-screen bg-slate-100 text-ink">
-      <aside className={`fixed inset-y-0 left-0 z-40 w-80 border-r border-slate-200 bg-white transition lg:z-20 lg:flex lg:flex-col ${mobileOpen ? "flex flex-col" : "hidden lg:flex"}`}>
-        <Link to="/" className="border-b border-slate-200 px-5 py-4">
+      <button
+        className="icon-btn fixed left-3 top-3 z-30 lg:hidden"
+        onClick={() => setMobileOpen(true)}
+        aria-label="Open navigation menu"
+        aria-expanded={mobileOpen}
+      >
+        <Menu />
+      </button>
+      {mobileOpen && <div className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[1px] lg:hidden" onClick={closeMobileMenu} />}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(18.5rem,calc(100vw-2rem))] flex-col border-r border-slate-200 bg-white shadow-2xl transition-transform duration-200 lg:z-20 lg:w-80 lg:translate-x-0 lg:shadow-none ${mobileOpen ? "translate-x-0" : "-translate-x-full pointer-events-none lg:pointer-events-auto"}`}
+        aria-label="Primary navigation"
+      >
+        <Link to="/" className="border-b border-slate-200 px-4 py-4 lg:px-5" onClick={closeMobileMenu}>
           <div className="text-xs font-semibold uppercase tracking-wide text-cyan-700">Browser-only lab</div>
-          <div className="flex items-center justify-between gap-2"><span className="text-xl font-bold">Mega Cryptography Suite</span><button className="icon-btn lg:hidden" onClick={(event) => { event.preventDefault(); setMobileOpen(false); }}><X /></button></div>
+          <div className="flex items-center justify-between gap-2"><span className="text-lg font-bold leading-tight lg:text-xl">Mega Cryptography Suite</span><button className="icon-btn lg:hidden" aria-label="Close navigation menu" onClick={(event) => { event.preventDefault(); setMobileOpen(false); }}><X /></button></div>
         </Link>
-        <div className="p-4">
+        <div className="p-3 lg:p-4">
           <label className="flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm">
             <Search className="h-4 w-4 text-slate-500" />
             <input className="w-full outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search algorithms" />
@@ -63,12 +105,12 @@ export default function RootLayout() {
         <nav className="flex-1 overflow-y-auto px-3 pb-6">
           {grouped.map(({ category, items }) => {
             const Icon = icons[categoryIcon[category] ?? "Shield"];
-            const isOpen = openCategories.has(category);
             const hasActive = items.some((item) => location.pathname === item.route);
+            const isOpen = openCategories.has(category) || hasActive || Boolean(query);
             return (
               <section key={category} className="mb-2">
                 <button
-                  className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-semibold ${hasActive ? "bg-cyan-50 text-cyan-800" : "text-slate-700 hover:bg-slate-100"}`}
+                  className={`flex min-h-10 w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-semibold ${hasActive ? "bg-cyan-50 text-cyan-800" : "text-slate-700 hover:bg-slate-100"}`}
                   onClick={() => setOpenCategories((current) => {
                     const next = new Set(current);
                     next.has(category) ? next.delete(category) : next.add(category);
@@ -76,7 +118,10 @@ export default function RootLayout() {
                   })}
                 >
                   <Icon className="h-4 w-4" />
-                  <span className="flex-1">{category}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{categoryDisplay[category] ?? category}</span>
+                    {categoryDisplay[category] && <span className="block truncate text-[10px] font-medium text-slate-500">{category}</span>}
+                  </span>
                   <ChevronDown className={`h-4 w-4 transition ${isOpen ? "" : "-rotate-90"}`} />
                 </button>
                 {isOpen && (
@@ -85,6 +130,7 @@ export default function RootLayout() {
                       <NavLink
                         key={item.route}
                         to={item.route}
+                        onClick={closeMobileMenu}
                         className={({ isActive }) => `flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${isActive ? "bg-ink text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}
                       >
                         <span className="truncate">{item.label}</span>
@@ -101,11 +147,11 @@ export default function RootLayout() {
           })}
         </nav>
       </aside>
-      <main className="lg:pl-80">
-        <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
-          <div className="flex items-center justify-between"><div className="font-bold">Mega Cryptography Suite</div><button className="icon-btn" onClick={() => setMobileOpen(true)}><Menu /></button></div>
+      <main className="min-h-screen lg:pl-80">
+        <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 py-2 pl-16 backdrop-blur lg:hidden">
+          <div className="flex min-h-10 items-center justify-between gap-3"><div className="truncate text-sm font-bold">Mega Cryptography Suite</div><Link className="btn px-3" to="/">Home</Link></div>
         </div>
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
           <PrivacyBanner />
           <TopAlgorithmsMenu />
           <Breadcrumbs />
@@ -113,6 +159,18 @@ export default function RootLayout() {
           <Suspense fallback={<div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">Loading cryptography module...</div>}>
             <Outlet />
           </Suspense>
+          <footer className="mt-10 border-t border-slate-200 py-6 text-sm text-slate-600">
+            <div className="rounded-md border border-slate-200 bg-white px-4 py-5 shadow-sm">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <a className="font-bold text-ink hover:text-cyan-700" href="https://www.AimerSociety.com" target="_blank" rel="noreferrer">www.AimerSociety.com</a>
+                  <div className="mt-1 font-semibold text-slate-700">AI Learning Tools</div>
+                  <p className="mt-1 max-w-2xl">Artificial Intelligence Medical & Engineering Researchers Society Tools</p>
+                </div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">All rights reserved.</div>
+              </div>
+            </div>
+          </footer>
         </div>
       </main>
     </div>

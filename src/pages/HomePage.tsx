@@ -14,12 +14,12 @@ export default function HomePage() {
   }, {});
   return (
     <div className="space-y-6">
-      <section className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
         <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">No backend, no API crypto dependency</p>
-        <h1 className="mt-2 text-3xl font-bold">Mega Cryptography Suite</h1>
+        <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Mega Cryptography Suite</h1>
         <p className="mt-3 max-w-3xl text-slate-600">A browser-only learning lab with lazy-loaded algorithm pages, local Web Crypto operations where available, custom educational visualizers, and IndexedDB experiment storage.</p>
       </section>
-      <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">Implementation Progress</h2>
           <div className="flex flex-wrap gap-2"><ImplementationBadge status="Real" /><ImplementationBadge status="Substitute" /></div>
@@ -32,7 +32,7 @@ export default function HomePage() {
         </div>
       </section>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {featured.map((item) => <Link key={item.route} to={item.route} className="rounded-md border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><div className="mb-3 flex items-center justify-between gap-2"><h2 className="font-semibold">{item.label}</h2><SecurityStatusBadge status={item.securityStatus} compact /></div><p className="text-sm text-slate-600">{item.category}</p><div className="mt-4 flex flex-wrap gap-2"><ImplementationBadge status={item.implementationStatus ?? "Substitute"} compact /><BrowserSupportBadge support={item.browserSupport ?? "Educational Substitute"} compact /></div></Link>)}
+        {featured.map((item) => <Link key={item.route} to={item.route} className="min-h-10 rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5"><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 className="font-semibold">{item.label}</h2><SecurityStatusBadge status={item.securityStatus} compact /></div><p className="text-sm text-slate-600">{item.category}</p><div className="mt-4 flex flex-wrap gap-2"><ImplementationBadge status={item.implementationStatus ?? "Substitute"} compact /><BrowserSupportBadge support={item.browserSupport ?? "Educational Substitute"} compact /></div></Link>)}
       </section>
     </div>
   );

@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, CheckCircle2, ChevronDown, FileText, RotateCcw, Shuffle, Sparkles } from "lucide-react";
 import type { SecurityStatus } from "../../types";
 import { PageHeader } from "./PageHeader";
 import { InputPanel } from "./InputPanel";
 import { OutputPanel } from "./OutputPanel";
 import { WarningBadge } from "./WarningBadge";
 import { ExportReportButton } from "./ExportReportButton";
+import { CopyButton } from "./CopyButton";
+import { StepControls } from "./StepControls";
+import { ByteLevelFlowDiagram } from "../visualization/ByteLevelFlowDiagram";
 import { saveExperiment } from "../../lib/storage";
 
 export interface AlgorithmPageShellProps {
@@ -28,6 +32,17 @@ const sampleFor = (label: string) => {
   if (lower.includes("block")) return "0011223344556677";
   return `${label} sample`;
 };
+
+const tabs = ["Overview", "Interactive Demo", "Step-by-Step", "Security Notes", "Test Vectors"] as const;
+type Tab = typeof tabs[number];
+
+const commonMistakes = [
+  "Nonce or IV reuse with stream ciphers, CTR, or GCM",
+  "Weak keys, toy key sizes, or pasted production secrets",
+  "ECB mode or deterministic encryption for repeated data",
+  "Missing padding checks, missing authentication, or bad salts",
+  "Using broken hashes such as MD5 or SHA-1 for attacker-facing integrity",
+];
 
 const randomHex = (bytes: number) => {
   const data = new Uint8Array(bytes);
@@ -72,7 +87,44 @@ const caesar = (value: string, shift: number) => value.replace(/[a-z]/gi, (char)
 });
 const digestHex = async (algorithm: string, message: string) => bytesHex(await crypto.subtle.digest(algorithm, utf8.encode(message)));
 const toyHash = async (message: string, bits = 32) => (await digestHex("SHA-256", message)).slice(0, bits / 4);
+const unavailable = (name: string) => `${name} is not implemented in this browser demo. Add a vetted library or WebAssembly module before showing cryptographic output.`;
 const getValue = (values: Record<string, string>, needle: string) => Object.entries(values).find(([key]) => key.toLowerCase().includes(needle.toLowerCase()))?.[1] ?? "";
+const isHexishField = (label: string) => /hex|key|iv|nonce|salt|block|cipher|tag|seed|scalar/i.test(label);
+const isNumericField = (label: string) => /\b(p|q|g|n|e|d|k|a|b|cost|round|count|bits|size|iteration|memory|parallelism|shift|rail|max)\b/i.test(label);
+const validateField = (label: string, value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return "Required for this demo.";
+  if (isHexishField(label) && !/password|message|plain|aad|keyword|alphabet|format|choice|curve/i.test(label)) {
+    const clean = cleanHex(trimmed);
+    if (!clean) return "Use hexadecimal characters or load sample data.";
+    if (clean.length % 2 !== 0) return "Hex values need an even number of digits.";
+    if (/block/i.test(label) && clean.length % 16 !== 0) return "Block-like values should align to 8-byte or 16-byte boundaries.";
+  }
+  if (isNumericField(label) && !/key|message|plain|cipher|hashes/i.test(label) && Number.isNaN(Number(trimmed))) return "Use a numeric value.";
+  if (/password/i.test(label) && trimmed.length < 8) return "Use at least 8 characters for a realistic password demo.";
+  if (/salt|nonce|iv/i.test(label) && trimmed.length < 8) return "Use a unique value with enough length for this parameter.";
+  return "";
+};
+const textReport = (data: { title: string; category: string; status: SecurityStatus; values: Record<string, string>; derived: { output: string; value: string }[]; notes: string[] }) => [
+  `# ${data.title}`,
+  `Category: ${data.category}`,
+  `Status: ${data.status === "Unsafe" ? "Unsafe If Misused" : data.status}`,
+  "",
+  "Inputs:",
+  ...Object.entries(data.values).map(([key, value]) => `- ${key}: ${value}`),
+  "",
+  "Outputs:",
+  ...data.derived.map((item) => `- ${item.output}: ${item.value}`),
+  "",
+  "Security notes:",
+  ...data.notes.map((note) => `- ${note}`),
+].join("\n");
+const diffCharacters = (before: string, after: string) => Array.from({ length: Math.max(before.length, after.length) }, (_, index) => ({
+  index,
+  before: before[index] ?? "",
+  after: after[index] ?? "",
+  changed: (before[index] ?? "") !== (after[index] ?? ""),
+})).slice(0, 96);
 const padBytes = (value: string, blockSize: number, kind: string) => {
   const data = Array.from(utf8.encode(value));
   const rem = data.length % blockSize;
@@ -103,8 +155,9 @@ async function computeRealOutputs(title: string, values: Record<string, string>,
 
   try {
     if (lower.includes("sha-1")) push("SHA-1 digest", await digestHex("SHA-1", get("message") || first));
-    else if (lower.includes("sha-3") || lower.includes("keccak")) push("Sponge-family SHA-384 digest", await digestHex("SHA-384", get("message") || first));
-    else if (lower.includes("ripemd") || lower.includes("blake") || lower.includes("md5")) push("Digest preview", await toyHash(get("message") || first, lower.includes("md5") ? 128 : 256));
+    else if (lower.includes("sha-3") || lower.includes("keccak")) push("Digest output", unavailable(title));
+    else if (lower.includes("ripemd") || lower.includes("blake")) push("Digest output", unavailable(title));
+    else if (lower.includes("md5")) push("Digest preview", await toyHash(get("message") || first, 128));
     else if (lower.includes("rsa encryption") || lower.includes("small exponent")) push("Cipher integer", modPow(BigInt(get("message") || "42"), BigInt(get("e") || "17"), BigInt(get("n") || "3233")));
     else if (lower.includes("rsa decryption")) push("Recovered message integer", modPow(BigInt(get("cipher") || "2557"), BigInt(get("d") || "2753"), BigInt(get("n") || "3233")));
     else if (lower.includes("rsa signature")) {
@@ -139,7 +192,7 @@ async function computeRealOutputs(title: string, values: Record<string, string>,
     else if (lower.includes("hkdf")) {
       const key = await crypto.subtle.importKey("raw", utf8.encode(get("input") || first), "HKDF", false, ["deriveBits"]);
       push("OKM", bytesHex(await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt: utf8.encode(get("salt") || "salt"), info: utf8.encode(get("info") || "") }, key, 256)));
-    } else if (lower.includes("cmac") || lower.includes("gmac") || lower.includes("poly1305")) push("Authentication tag preview", (await digestHex("SHA-256", `${get("key")}:${get("message") || first}`)).slice(0, 32));
+    } else if (lower.includes("cmac") || lower.includes("gmac") || lower.includes("poly1305")) push("Authentication tag", unavailable(title));
     else if (lower.includes("nonce reuse")) push("P1 XOR P2", xorHex(bytesHex(utf8.encode(get("1") || "attack at dawn")), bytesHex(utf8.encode(get("2") || "defend at dusk"))));
     else if (lower.includes("frequency")) {
       const text = (get("cipher") || first).toUpperCase(); push("Most common letter", "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((letter) => [letter, (text.match(new RegExp(letter, "g")) ?? []).length] as const).sort((a, b) => b[1] - a[1])[0]?.join(": ") ?? "none");
@@ -151,13 +204,15 @@ async function computeRealOutputs(title: string, values: Record<string, string>,
       let state = (get("seed") || "101101").replace(/[^01]/g, "") || "1"; let bits = "";
       for (let i = 0; i < 32; i += 1) { const fb = Number(state[0]) ^ Number(state[state.length - 1]); bits += state[state.length - 1]; state = String(fb) + state.slice(0, -1); }
       push("Generated bits", bits);
-    } else if (lower.includes("rc4") || lower.includes("salsa") || lower.includes("one-time pad")) push("XOR output", xorHex(bytesHex(utf8.encode(get("plain") || first)), cleanHex(get("key") || "00112233445566778899aabbccddeeff").padEnd(64, "0")));
+    } else if (lower.includes("salsa")) push("Keystream output", unavailable(title));
+    else if (lower.includes("rc4") || lower.includes("one-time pad")) push("XOR output", xorHex(bytesHex(utf8.encode(get("plain") || first)), cleanHex(get("key") || "00112233445566778899aabbccddeeff").padEnd(64, "0")));
     else if (lower.includes("des key")) push("Effective key bits", cleanHex(get("key") || first).slice(0, 16).split("").map((char) => parseInt(char, 16).toString(2).padStart(4, "0")).join("").split("").filter((_, index) => (index + 1) % 8 !== 0).join(""));
-    else if (lower.includes("aes") || lower.includes("des") || lower.includes("twofish") || lower.includes("serpent") || lower.includes("blowfish") || lower.includes("camellia") || lower.includes("idea") || lower.includes("rc5") || lower.includes("rc6")) push("Educational block transform", xorHex(cleanHex(get("block") || first).padEnd(32, "0"), cleanHex(get("key") || "00112233445566778899aabbccddeeff").padEnd(32, "0")));
+    else if (lower.includes("twofish") || lower.includes("serpent") || lower.includes("camellia") || lower.includes("idea") || lower.includes("rc6")) push("Cipher block", unavailable(title));
+    else if (lower.includes("aes") || lower.includes("des") || lower.includes("blowfish") || lower.includes("rc5")) push("Educational block transform", xorHex(cleanHex(get("block") || first).padEnd(32, "0"), cleanHex(get("key") || "00112233445566778899aabbccddeeff").padEnd(32, "0")));
     else if (lower.includes("certificate") || lower.includes("csr") || lower.includes("pem")) push("PEM block type", first.match(/-----BEGIN ([^-]+)-----/)?.[1] ?? "not detected");
     else if (lower.includes("base") || lower.includes("key format")) push("Base64", btoa(String.fromCharCode(...utf8.encode(first))));
     else if (lower.includes("merkle")) push("Merkle root preview", await toyHash(first.split(/\n|,/).map((item) => item.trim()).filter(Boolean).join("|"), 256));
-    else if (lower.includes("wallet")) { const key = new Uint8Array(32); crypto.getRandomValues(key); push("Private key", bytesHex(key)); push("Public key hash preview", await toyHash(bytesHex(key), 160)); }
+    else if (lower.includes("wallet")) { const key = new Uint8Array(32); crypto.getRandomValues(key); push("Private key sample", bytesHex(key)); push("Address output", unavailable("Wallet address derivation")); }
     else if (lower.includes("entropy")) push("Entropy estimate", `${entropy(first).toFixed(3)} bits/byte`);
     else push(outputs[0] ?? "Result", await digestHex("SHA-256", JSON.stringify(values)));
   } catch (error) {
@@ -171,6 +226,9 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
   const [encoding, setEncoding] = useState("UTF-8");
   const [format, setFormat] = useState("Hex");
   const [saved, setSaved] = useState("");
+  const [activeTab, setActiveTab] = useState<Tab>("Interactive Demo");
+  const [step, setStep] = useState(0);
+  const [expanded, setExpanded] = useState<string | null>("formula");
   const combined = JSON.stringify({ title, values, encoding, format });
   const [derived, setDerived] = useState(() => outputs.map((output) => ({ output, value: "computing..." })));
   useEffect(() => {
@@ -182,47 +240,129 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
   }, [title, combined, outputs]);
   const report = { title, category, status, values, encoding, format, derived, visualizers, notes };
   const update = (key: string, value: string) => setValues((current) => ({ ...current, [key]: value }));
+  const validation = useMemo(() => Object.entries(values).map(([field, value]) => ({ field, message: validateField(field, value) })).filter((issue) => issue.message), [values]);
+  const firstInput = Object.values(values)[0] ?? "";
+  const firstOutput = derived[0]?.value ?? "";
+  const allOutputText = derived.map((item) => `${item.output}: ${item.value}`).join("\n\n");
+  const tabClass = (tab: Tab) => `shrink-0 rounded-md border px-3 py-2 text-sm font-semibold transition ${activeTab === tab ? "border-cyan-300 bg-cyan-50 text-cyan-900" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`;
+  const activeStepName = visualizers[step % Math.max(visualizers.length, 1)] ?? "Demo step";
+  const resetValues = () => {
+    setValues(Object.fromEntries(inputs.map((input) => [input, sampleFor(input)])));
+    setEncoding("UTF-8");
+    setFormat("Hex");
+    setStep(0);
+  };
 
   return (
     <div className="space-y-6">
       <PageHeader title={title} category={category} status={status}>{intro}</PageHeader>
-      <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
-        <InputPanel title="User input and algorithm settings">
-          <div className="grid gap-3">
-            {inputs.map((input) => (
-              <label key={input} className="text-sm font-medium text-slate-700">
-                {input}
-                <input className="field mt-1" value={values[input] ?? ""} onChange={(event) => update(input, event.target.value)} />
-              </label>
-            ))}
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="text-sm font-medium">Encoding selector<select className="field mt-1" value={encoding} onChange={(event) => setEncoding(event.target.value)}><option>UTF-8</option><option>Hex</option><option>Binary</option><option>Base64</option></select></label>
-              <label className="text-sm font-medium">Output format<select className="field mt-1" value={format} onChange={(event) => setFormat(event.target.value)}><option>Text</option><option>Hex</option><option>Base64</option><option>Binary</option></select></label>
+      <div className="flex max-w-full gap-2 overflow-x-auto rounded-md border border-slate-200 bg-white p-2 shadow-sm">
+        {tabs.map((tab) => <button key={tab} className={tabClass(tab)} onClick={() => setActiveTab(tab)}>{tab}</button>)}
+      </div>
+
+      {activeTab === "Overview" && (
+        <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-lg font-semibold">Overview</h2>
+          <p className="max-w-4xl text-sm text-slate-700">{intro}</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><div className="text-xs font-semibold uppercase text-slate-500">Category</div><div className="mt-1 font-semibold">{category}</div></div>
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><div className="text-xs font-semibold uppercase text-slate-500">Inputs</div><div className="mt-1 text-sm text-slate-700">{inputs.join(", ")}</div></div>
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><div className="text-xs font-semibold uppercase text-slate-500">Outputs</div><div className="mt-1 text-sm text-slate-700">{outputs.join(", ")}</div></div>
+          </div>
+        </section>
+      )}
+
+      {activeTab === "Interactive Demo" && (
+        <section id="interactive-demo" className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
+          <InputPanel title="User input and algorithm settings">
+            <div className="grid gap-3">
+              {inputs.map((input) => {
+                const issue = validation.find((item) => item.field === input);
+                return (
+                  <label key={input} className="text-sm font-medium text-slate-700">
+                    {input}
+                    <input className={`field mt-1 ${issue ? "border-amber-400 focus:border-amber-500 focus:ring-amber-100" : ""}`} value={values[input] ?? ""} onChange={(event) => update(input, event.target.value)} />
+                    {issue && <span className="mt-1 block text-xs font-semibold text-amber-700">{issue.message}</span>}
+                  </label>
+                );
+              })}
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="text-sm font-medium">Encoding selector<select className="field mt-1" value={encoding} onChange={(event) => setEncoding(event.target.value)}><option>UTF-8</option><option>Hex</option><option>Binary</option><option>Base64</option></select></label>
+                <label className="text-sm font-medium">Output format<select className="field mt-1" value={format} onChange={(event) => setFormat(event.target.value)}><option>Text</option><option>Hex</option><option>Base64</option><option>Binary</option></select></label>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button className="btn" onClick={() => setValues(Object.fromEntries(inputs.map((input) => [input, sampleFor(input)])))}><Sparkles className="h-4 w-4" /> Sample</button>
+                <button className="btn" onClick={() => setValues((current) => Object.fromEntries(inputs.map((input) => [input, /key|iv|nonce|salt|block|seed|scalar/i.test(input) ? randomHex(16) : current[input] || sampleFor(input)])))}><Shuffle className="h-4 w-4" /> Random fields</button>
+                <button className="btn" onClick={resetValues}><RotateCcw className="h-4 w-4" /> Reset</button>
+              </div>
+              <div className={`rounded-md border p-3 text-sm ${validation.length ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>
+                <div className="flex items-center gap-2 font-semibold">{validation.length ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}{validation.length ? `${validation.length} validation issue${validation.length === 1 ? "" : "s"}` : "Inputs look ready"}</div>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button className="btn" onClick={() => setValues(Object.fromEntries(inputs.map((input) => [input, sampleFor(input)])))}>Load sample data</button>
-              <button className="btn" onClick={() => setValues((current) => Object.fromEntries(inputs.map((input) => [input, /key|iv|nonce|salt|block/i.test(input) ? randomHex(16) : current[input] || sampleFor(input)])))}>Random cryptographic fields</button>
-              <button className="btn" onClick={() => setValues(Object.fromEntries(inputs.map((input) => [input, ""])))}>Clear</button>
+          </InputPanel>
+          <OutputPanel>
+            <div className="space-y-3">
+              <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                Computed locally in the browser. Legacy or browser-unavailable primitives use small educational arithmetic or Web Crypto-backed substitutes instead of fake hashes.
+              </div>
+              {derived.map((output) => <div key={output.output} className="rounded-md border border-slate-200 bg-slate-50 p-3"><div className="flex items-center justify-between gap-3"><div className="text-xs uppercase text-slate-500">{output.output}</div><CopyButton value={output.value} label="Copy" /></div><div className="mt-2 break-all font-mono text-sm">{output.value}</div></div>)}
+              <CopyButton value={allOutputText} label="Copy all outputs" />
+            </div>
+          </OutputPanel>
+        </section>
+      )}
+
+      {activeTab === "Step-by-Step" && (
+        <section id="step-by-step" className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold">Step-by-step visualization and internal state</h2>
+          <StepControls step={step} max={Math.max(visualizers.length - 1, 0)} onStep={setStep} />
+          <div className="mt-4 rounded-md border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-900">Current step: <span className="font-semibold">{activeStepName}</span></div>
+          <div className="mt-4">
+            <ByteLevelFlowDiagram input={firstInput} output={firstOutput} operation={title} activeStep={step} />
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{visualizers.map((item, index) => <div key={item} className={`rounded-md border p-4 ${index === step ? "border-cyan-300 bg-cyan-50" : "border-slate-200 bg-slate-50"}`}><div className="font-semibold">{item}</div><div className="mt-3 grid grid-cols-8 gap-1">{Array.from({ length: 8 }, (_, bit) => <span key={bit} className={`h-3 rounded ${bit <= (index + combined.length) % 8 ? "bg-cyan-500" : "bg-slate-200"} ${index === step && bit === step % 8 ? "changed-byte" : ""}`} />)}</div></div>)}</div>
+          <div className="mt-5 grid gap-4 xl:grid-cols-2">
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><h3 className="mb-3 font-semibold">Plaintext / input</h3><pre className="max-h-52 overflow-auto whitespace-pre-wrap break-all rounded bg-white p-3 font-mono text-xs">{firstInput}</pre></div>
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><h3 className="mb-3 font-semibold">Ciphertext / output</h3><pre className="max-h-52 overflow-auto whitespace-pre-wrap break-all rounded bg-white p-3 font-mono text-xs">{firstOutput}</pre></div>
+          </div>
+          <div className="mt-5 rounded-md border border-slate-200 bg-white p-4">
+            <h3 className="mb-3 font-semibold">Visual diff highlight</h3>
+            <div className="flex flex-wrap gap-1 font-mono text-xs">{diffCharacters(firstInput, firstOutput).map((char) => <span key={char.index} className={`min-w-6 rounded px-1 py-1 text-center ${char.changed ? "bg-amber-100 text-amber-900 changed-byte" : "bg-slate-100 text-slate-600"}`}>{char.after || "·"}</span>)}</div>
+          </div>
+        </section>
+      )}
+
+      {activeTab === "Security Notes" && (
+        <section id="security-notes" className="grid gap-6 xl:grid-cols-2">
+          <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-3 text-lg font-semibold">Learning notes</h2>
+            <div className="space-y-3">
+              {[["formula", "Formula and structure", notes.join(" ")], ["parameters", "Parameter guidance", status === "Modern" ? "Prefer authenticated modes, unique nonces, strong keys, and vetted implementations." : "Treat this page as a learning tool and migrate away from weak or deprecated primitives."], ["validation", "Validation rules", "Inputs are checked for missing values, malformed hex, short salts or nonces, and numeric parameter mistakes."]].map(([id, label, text]) => (
+                <div key={id} className="rounded-md border border-slate-200">
+                  <button className="flex w-full items-center justify-between px-4 py-3 text-left font-semibold" onClick={() => setExpanded(expanded === id ? null : id)}>{label}<ChevronDown className={`h-4 w-4 transition ${expanded === id ? "" : "-rotate-90"}`} /></button>
+                  {expanded === id && <p className="border-t border-slate-200 px-4 py-3 text-sm text-slate-700">{text}</p>}
+                </div>
+              ))}
             </div>
           </div>
-        </InputPanel>
-        <OutputPanel>
-          <div className="space-y-3">
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-              Computed locally in the browser. Legacy or browser-unavailable primitives use small educational arithmetic or Web Crypto-backed substitutes instead of fake hashes.
-            </div>
+          <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-3 text-lg font-semibold">Common mistakes</h2>
+            <WarningBadge>{status === "Modern" ? "Correct parameters and authenticated usage still matter." : "This page is educational; do not use weak or deprecated primitives for new systems."}</WarningBadge>
+            <div className="mt-4 grid gap-3">{commonMistakes.map((mistake) => <div key={mistake} className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-900">{mistake}</div>)}</div>
+          </div>
+        </section>
+      )}
+
+      {activeTab === "Test Vectors" && (
+        <section id="test-vectors" className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-lg font-semibold">Test vectors and export</h2>
+          <p className="text-sm text-slate-600">Use sample values as a repeatable local test vector, then export JSON, a text report, or a print-ready page.</p>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
             {derived.map((output) => <div key={output.output} className="rounded-md border border-slate-200 bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">{output.output}</div><div className="mt-1 break-all font-mono text-sm">{output.value}</div></div>)}
           </div>
-        </OutputPanel>
-      </div>
-      <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold">Step-by-step visualization and internal state</h2>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{visualizers.map((item, index) => <div key={item} className="rounded-md border border-slate-200 bg-slate-50 p-4"><div className="font-semibold">{item}</div><div className="mt-3 grid grid-cols-8 gap-1">{Array.from({ length: 8 }, (_, bit) => <span key={bit} className={`h-3 rounded ${bit <= (index + combined.length) % 8 ? "bg-cyan-500" : "bg-slate-200"}`} />)}</div></div>)}</div>
-      </section>
-      <div className="grid gap-6 xl:grid-cols-2">
-        <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="mb-3 text-lg font-semibold">Learning notes</h2><ul className="space-y-2 text-sm text-slate-700">{notes.map((note) => <li key={note}>- {note}</li>)}</ul></section>
-        <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="mb-3 text-lg font-semibold">Mistakes, warnings, and export</h2><WarningBadge>{status === "Modern" ? "Correct parameters and authenticated usage still matter." : "This page is educational; do not use weak or deprecated primitives for new systems."}</WarningBadge><div className="mt-4 flex flex-wrap gap-2"><ExportReportButton title={title} data={report} /><button className="btn" onClick={() => navigator.clipboard?.writeText(`# ${title}\n\n${intro}\n\n${notes.join("\n")}`)}>Export Markdown</button><button className="btn" onClick={async () => { await saveExperiment({ id: crypto.randomUUID(), algorithm: title, title: `${title} experiment`, createdAt: new Date().toISOString(), input: values, output: derived, steps: visualizers }); setSaved("Saved to IndexedDB"); }}>Save experiment</button></div>{saved && <p className="mt-3 text-sm font-semibold text-emerald-700">{saved}</p>}</section>
-      </div>
+          <div className="mt-4 flex flex-wrap gap-2"><ExportReportButton title={title} data={report} /><button className="btn" onClick={() => navigator.clipboard?.writeText(textReport({ title, category, status, values, derived, notes }))}><FileText className="h-4 w-4" /> Copy text report</button><button className="btn" onClick={() => window.print()}>Print summary</button><button className="btn" onClick={async () => { await saveExperiment({ id: crypto.randomUUID(), algorithm: title, title: `${title} experiment`, createdAt: new Date().toISOString(), input: values, output: derived, steps: visualizers }); setSaved("Saved to IndexedDB"); }}>Save experiment</button></div>{saved && <p className="mt-3 text-sm font-semibold text-emerald-700">{saved}</p>}
+        </section>
+      )}
     </div>
   );
 }
