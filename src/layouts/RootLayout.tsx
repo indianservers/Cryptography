@@ -45,6 +45,28 @@ const categoryDisplay: Record<string, string> = {
   "Key Derivation Functions": "KDF",
 };
 
+const categoryTone: Record<string, string> = {
+  "Classical Cryptography": "border-sky-200 bg-sky-50 text-sky-800",
+  "Symmetric Cryptography": "border-teal-200 bg-teal-50 text-teal-800",
+  "Block Ciphers": "border-teal-200 bg-teal-50 text-teal-800",
+  "Stream Ciphers": "border-cyan-200 bg-cyan-50 text-cyan-800",
+  "Public Key Cryptography": "border-indigo-200 bg-indigo-50 text-indigo-800",
+  "Elliptic Curve Cryptography": "border-violet-200 bg-violet-50 text-violet-800",
+  "Hash Functions": "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-800",
+  "MAC Algorithms": "border-rose-200 bg-rose-50 text-rose-800",
+  "Key Derivation Functions": "border-emerald-200 bg-emerald-50 text-emerald-800",
+  "Modes of Operation": "border-blue-200 bg-blue-50 text-blue-800",
+  "Padding Schemes": "border-amber-200 bg-amber-50 text-amber-900",
+  "Encoding Tools": "border-lime-200 bg-lime-50 text-lime-800",
+  "Certificates and PKI": "border-slate-300 bg-slate-100 text-slate-800",
+  "Cryptanalysis and Attacks": "border-red-200 bg-red-50 text-red-800",
+  "Blockchain Cryptography": "border-orange-200 bg-orange-50 text-orange-800",
+  "Randomness and Entropy": "border-purple-200 bg-purple-50 text-purple-800",
+  "Benchmark and Comparison": "border-cyan-200 bg-cyan-50 text-cyan-800",
+  "Saved Experiments": "border-emerald-200 bg-emerald-50 text-emerald-800",
+  "Export Center": "border-blue-200 bg-blue-50 text-blue-800",
+};
+
 export default function RootLayout() {
   const location = useLocation();
   const [query, setQuery] = useState("");
@@ -78,7 +100,7 @@ export default function RootLayout() {
   const closeMobileMenu = () => setMobileOpen(false);
 
   return (
-    <div className="min-h-screen bg-slate-100 text-ink">
+    <div className="min-h-screen bg-[#eef4f8] text-ink">
       <button
         className="icon-btn fixed left-3 top-3 z-30 lg:hidden"
         onClick={() => setMobileOpen(true)}
@@ -93,11 +115,11 @@ export default function RootLayout() {
         aria-label="Primary navigation"
       >
         <Link to="/" className="border-b border-slate-200 px-4 py-4 lg:px-5" onClick={closeMobileMenu}>
-          <div className="text-xs font-semibold uppercase tracking-wide text-cyan-700">Browser-only lab</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-teal-700">Browser-only lab</div>
           <div className="flex items-center justify-between gap-2"><span className="text-lg font-bold leading-tight lg:text-xl">Mega Cryptography Suite</span><button className="icon-btn lg:hidden" aria-label="Close navigation menu" onClick={(event) => { event.preventDefault(); setMobileOpen(false); }}><X /></button></div>
         </Link>
         <div className="p-3 lg:p-4">
-          <label className="flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm">
+          <label className="flex min-h-11 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-100">
             <Search className="h-4 w-4 text-slate-500" />
             <input className="w-full outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search algorithms" />
           </label>
@@ -107,17 +129,18 @@ export default function RootLayout() {
             const Icon = icons[categoryIcon[category] ?? "Shield"];
             const hasActive = items.some((item) => location.pathname === item.route);
             const isOpen = openCategories.has(category) || hasActive || Boolean(query);
+            const tone = categoryTone[category] ?? "border-slate-200 bg-slate-50 text-slate-800";
             return (
               <section key={category} className="mb-2">
                 <button
-                  className={`flex min-h-10 w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-semibold ${hasActive ? "bg-cyan-50 text-cyan-800" : "text-slate-700 hover:bg-slate-100"}`}
+                  className={`flex min-h-11 w-full items-center gap-2 rounded-md border px-2 py-2 text-left text-sm font-semibold transition ${hasActive ? tone : "border-transparent text-slate-700 hover:border-slate-200 hover:bg-slate-50"}`}
                   onClick={() => setOpenCategories((current) => {
                     const next = new Set(current);
                     next.has(category) ? next.delete(category) : next.add(category);
                     return next;
                   })}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-4 w-4 shrink-0" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{categoryDisplay[category] ?? category}</span>
                     {categoryDisplay[category] && <span className="block truncate text-[10px] font-medium text-slate-500">{category}</span>}
@@ -131,7 +154,7 @@ export default function RootLayout() {
                         key={item.route}
                         to={item.route}
                         onClick={closeMobileMenu}
-                        className={({ isActive }) => `flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${isActive ? "bg-ink text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}
+                        className={({ isActive }) => `flex min-h-10 items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm transition ${isActive ? "border-teal-700 bg-teal-700 text-white shadow-sm" : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"}`}
                       >
                         <span className="truncate">{item.label}</span>
                         <span className="flex shrink-0 items-center gap-1">
@@ -163,7 +186,7 @@ export default function RootLayout() {
             <div className="rounded-md border border-slate-200 bg-white px-4 py-5 shadow-sm">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <a className="font-bold text-ink hover:text-cyan-700" href="https://www.AimerSociety.com" target="_blank" rel="noreferrer">www.AimerSociety.com</a>
+                  <a className="font-bold text-ink hover:text-teal-700" href="https://www.AimerSociety.com" target="_blank" rel="noreferrer">www.AimerSociety.com</a>
                   <div className="mt-1 font-semibold text-slate-700">AI Learning Tools</div>
                   <p className="mt-1 max-w-2xl">Artificial Intelligence Medical & Engineering Researchers Society Tools</p>
                 </div>

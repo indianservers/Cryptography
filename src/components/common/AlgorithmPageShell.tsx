@@ -244,7 +244,7 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
   const firstInput = Object.values(values)[0] ?? "";
   const firstOutput = derived[0]?.value ?? "";
   const allOutputText = derived.map((item) => `${item.output}: ${item.value}`).join("\n\n");
-  const tabClass = (tab: Tab) => `shrink-0 rounded-md border px-3 py-2 text-sm font-semibold transition ${activeTab === tab ? "border-cyan-300 bg-cyan-50 text-cyan-900" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`;
+  const tabClass = (tab: Tab) => `shrink-0 rounded-md border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${activeTab === tab ? "border-teal-700 bg-teal-700 text-white shadow-sm" : "border-slate-200 bg-white text-slate-700 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900"}`;
   const activeStepName = visualizers[step % Math.max(visualizers.length, 1)] ?? "Demo step";
   const resetValues = () => {
     setValues(Object.fromEntries(inputs.map((input) => [input, sampleFor(input)])));
@@ -291,7 +291,7 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
                 <label className="text-sm font-medium">Output format<select className="field mt-1" value={format} onChange={(event) => setFormat(event.target.value)}><option>Text</option><option>Hex</option><option>Base64</option><option>Binary</option></select></label>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button className="btn" onClick={() => setValues(Object.fromEntries(inputs.map((input) => [input, sampleFor(input)])))}><Sparkles className="h-4 w-4" /> Sample</button>
+                <button className="btn btn-primary" onClick={() => setValues(Object.fromEntries(inputs.map((input) => [input, sampleFor(input)])))}><Sparkles className="h-4 w-4" /> Sample</button>
                 <button className="btn" onClick={() => setValues((current) => Object.fromEntries(inputs.map((input) => [input, /key|iv|nonce|salt|block|seed|scalar/i.test(input) ? randomHex(16) : current[input] || sampleFor(input)])))}><Shuffle className="h-4 w-4" /> Random fields</button>
                 <button className="btn" onClick={resetValues}><RotateCcw className="h-4 w-4" /> Reset</button>
               </div>
@@ -305,7 +305,7 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
               <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
                 Computed locally in the browser. Legacy or browser-unavailable primitives use small educational arithmetic or Web Crypto-backed substitutes instead of fake hashes.
               </div>
-              {derived.map((output) => <div key={output.output} className="rounded-md border border-slate-200 bg-slate-50 p-3"><div className="flex items-center justify-between gap-3"><div className="text-xs uppercase text-slate-500">{output.output}</div><CopyButton value={output.value} label="Copy" /></div><div className="mt-2 break-all font-mono text-sm">{output.value}</div></div>)}
+              {derived.map((output) => <div key={output.output} className="rounded-md border border-teal-100 bg-teal-50/60 p-3"><div className="flex items-center justify-between gap-3"><div className="text-xs font-semibold uppercase text-teal-800">{output.output}</div><CopyButton value={output.value} label="Copy" /></div><div className="mt-2 break-all rounded border border-teal-100 bg-white p-2 font-mono text-sm text-slate-900">{output.value}</div></div>)}
               <CopyButton value={allOutputText} label="Copy all outputs" />
             </div>
           </OutputPanel>
@@ -316,11 +316,11 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
         <section id="step-by-step" className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold">Step-by-step visualization and internal state</h2>
           <StepControls step={step} max={Math.max(visualizers.length - 1, 0)} onStep={setStep} />
-          <div className="mt-4 rounded-md border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-900">Current step: <span className="font-semibold">{activeStepName}</span></div>
+          <div className="mt-4 rounded-md border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900">Current step: <span className="font-semibold">{activeStepName}</span></div>
           <div className="mt-4">
             <ByteLevelFlowDiagram input={firstInput} output={firstOutput} operation={title} activeStep={step} />
           </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{visualizers.map((item, index) => <div key={item} className={`rounded-md border p-4 ${index === step ? "border-cyan-300 bg-cyan-50" : "border-slate-200 bg-slate-50"}`}><div className="font-semibold">{item}</div><div className="mt-3 grid grid-cols-8 gap-1">{Array.from({ length: 8 }, (_, bit) => <span key={bit} className={`h-3 rounded ${bit <= (index + combined.length) % 8 ? "bg-cyan-500" : "bg-slate-200"} ${index === step && bit === step % 8 ? "changed-byte" : ""}`} />)}</div></div>)}</div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{visualizers.map((item, index) => <div key={item} className={`rounded-md border p-4 ${index === step ? "border-teal-300 bg-teal-50" : "border-slate-200 bg-slate-50"}`}><div className="font-semibold">{item}</div><div className="mt-3 grid grid-cols-8 gap-1">{Array.from({ length: 8 }, (_, bit) => <span key={bit} className={`h-3 rounded ${bit <= (index + combined.length) % 8 ? "bg-teal-500" : "bg-slate-200"} ${index === step && bit === step % 8 ? "changed-byte" : ""}`} />)}</div></div>)}</div>
           <div className="mt-5 grid gap-4 xl:grid-cols-2">
             <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><h3 className="mb-3 font-semibold">Plaintext / input</h3><pre className="max-h-52 overflow-auto whitespace-pre-wrap break-all rounded bg-white p-3 font-mono text-xs">{firstInput}</pre></div>
             <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><h3 className="mb-3 font-semibold">Ciphertext / output</h3><pre className="max-h-52 overflow-auto whitespace-pre-wrap break-all rounded bg-white p-3 font-mono text-xs">{firstOutput}</pre></div>

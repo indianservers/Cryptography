@@ -4,25 +4,52 @@
 
 @layer base {
   html { color-scheme: light; }
-  body { margin: 0; min-width: 320px; }
+  body {
+    margin: 0;
+    min-width: 320px;
+    background: #eef4f8;
+    color: #172033;
+    font-size: 16px;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+  }
   button, input, textarea, select { font: inherit; }
+  ::selection { background: #c8f5ee; color: #12333d; }
+  ::placeholder { color: #64748b; opacity: 1; }
   body.focus-mode aside { display: none !important; }
   body.focus-mode main { padding-left: 0 !important; }
 }
 
 @layer components {
-  .btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 active:translate-y-px; }
-  .icon-btn { @apply inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50; }
+  .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 active:translate-y-px disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none; }
+  .btn-primary { @apply border-teal-700 bg-teal-700 text-white shadow-sm hover:border-teal-800 hover:bg-teal-800 hover:text-white; }
+  .btn-secondary { @apply border-slate-300 bg-slate-50 text-slate-700 hover:border-slate-400 hover:bg-white hover:text-slate-900; }
+  .btn-success { @apply border-emerald-600 bg-emerald-600 text-white hover:border-emerald-700 hover:bg-emerald-700 hover:text-white; }
+  .btn-warning { @apply border-amber-300 bg-amber-50 text-amber-900 hover:border-amber-400 hover:bg-amber-100 hover:text-amber-950; }
+  .icon-btn { @apply inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 shadow-sm transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2; }
   .icon-btn svg { @apply h-4 w-4; }
-  .field { @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100; }
-  .label { @apply text-sm font-medium text-slate-700; }
+  .field { @apply w-full min-h-11 rounded-md border border-slate-300 bg-white px-3 py-2 text-base shadow-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500; }
+  .label { @apply text-sm font-semibold text-slate-700; }
+  .panel { @apply rounded-md border border-slate-200 bg-white p-5 shadow-sm; }
+  .panel-muted { @apply rounded-md border border-slate-200 bg-slate-50 p-4; }
+  .result-panel { @apply rounded-md border border-teal-100 bg-teal-50/60 p-3; }
+  .status-success { @apply border-emerald-200 bg-emerald-50 text-emerald-800; }
+  .status-warning { @apply border-amber-200 bg-amber-50 text-amber-900; }
+  .status-error { @apply border-red-200 bg-red-50 text-red-800; }
   .dark-table { @apply border-slate-700 bg-slate-950 text-slate-100; }
   .dark-table thead { @apply bg-slate-900; }
   .dark-table tr { @apply border-slate-800; }
   .compact-table th, .compact-table td { @apply px-2 py-1 text-xs; }
   .changed-byte { animation: changedPulse 1.6s ease-in-out infinite; }
   .crypto-wrap { overflow-wrap: anywhere; word-break: break-word; }
-  pre, code, .font-mono { overflow-wrap: anywhere; }
+  pre, code, .font-mono {
+    overflow-wrap: anywhere;
+    font-variant-ligatures: none;
+    letter-spacing: 0;
+  }
+  code, .font-mono {
+    color: #12333d;
+  }
   section, header { scroll-margin-top: 1rem; }
   body.compact-mode section, body.compact-mode header { @apply p-3; }
   body.compact-mode .field { @apply px-2 py-1 text-xs; }

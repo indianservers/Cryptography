@@ -11,7 +11,7 @@ export function DisplayControls() {
   }, [compact, darkTables]);
   return (
     <div className="flex flex-wrap gap-2">
-      <button className={`btn hidden sm:inline-flex ${compact ? "bg-cyan-50" : ""}`} onClick={() => setCompact((value) => !value)}>Compact {compact ? "on" : "off"}</button>
+      <button className={`btn hidden sm:inline-flex ${compact ? "border-teal-300 bg-teal-50 text-teal-900" : ""}`} onClick={() => setCompact((value) => !value)}>Compact {compact ? "on" : "off"}</button>
       <button className={`btn hidden sm:inline-flex ${darkTables ? "bg-slate-900 text-white" : ""}`} onClick={() => setDarkTables((value) => !value)}>Dark tables {darkTables ? "on" : "off"}</button>
       <button className="btn" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Top</button>
     </div>
