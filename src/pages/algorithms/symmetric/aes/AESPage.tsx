@@ -26,6 +26,9 @@ const toArrayBuffer = (value: Uint8Array) => value.buffer.slice(value.byteOffset
 type AesKeyBits = 128 | 192 | 256;
 const keyBitsFromSize = (value: string): AesKeyBits => value === "AES-256" ? 256 : value === "AES-192" ? 192 : 128;
 const cleanUserHex = (value: string) => value.replace(/[^0-9a-f]/gi, "");
+const asciiToBytes = (value: string) => new Uint8Array(Array.from(value, (char) => char.charCodeAt(0) & 0xff));
+const asciiToHex = (value: string) => bytesToHex(asciiToBytes(value));
+const randomAsciiKey = (length: number) => Array.from(crypto.getRandomValues(new Uint8Array(length)), (byte) => String.fromCharCode(33 + (byte % 94))).join("");
 const sBoxRows = Array.from({ length: 16 }, (_, row) => Array.from({ length: 16 }, (_, col) => aesSBox[row * 16 + col]));
 
 function applyBlockPadding(data: Uint8Array, padding: string) {
@@ -104,7 +107,7 @@ function SBoxLookupPanel({ byteMap }: { byteMap?: { index: number; before: numbe
 
 export default function AESPage() {
   const [plain, setPlain] = useState("Attack at dawn!!");
-  const [key, setKey] = useState("00112233445566778899aabbccddeeff");
+  const [key, setKey] = useState("Sixteen byte key");
   const [iv, setIv] = useState("000102030405060708090a0b0c0d0e0f");
   const [mode, setMode] = useState("CBC");
   const [size, setSize] = useState("AES-128");
@@ -117,20 +120,27 @@ export default function AESPage() {
   const [testVectorMessage, setTestVectorMessage] = useState("");
   const [seenNonces, setSeenNonces] = useState<string[]>(() => JSON.parse(localStorage.getItem("mega-crypto-aes-nonces") ?? "[]") as string[]);
   const keyBits = keyBitsFromSize(size);
-  const requiredKeyHexLength = keyBits / 4;
-  const cleanedKey = cleanUserHex(key);
-  const aesIssues = validateAesFields({ keyHex: key, keyBytes: keyBits / 8, ivHex: iv, mode });
+  const requiredKeyBytes = keyBits / 8;
+  const keyBytes = asciiToBytes(key);
+  const keyHex = asciiToHex(key);
+  const asciiKeyIssues = Array.from(key).some((char) => char.charCodeAt(0) > 0x7f)
+    ? [{ field: "Key", message: "Use ASCII characters only for the AES key text.", severity: "error" as const }]
+    : [];
+  const aesIssues = [
+    ...asciiKeyIssues,
+    ...validateAesFields({ keyHex, keyBytes: requiredKeyBytes, ivHex: iv, mode }),
+  ];
   const hasBlockingValidation = aesIssues.some((issue) => issue.severity === "error");
-  const keyIsValid = cleanedKey.length === requiredKeyHexLength;
-  const keyValidationText = keyIsValid ? `${size} key accepted: ${keyBits / 8} bytes.` : `${size} requires exactly ${requiredKeyHexLength} hex characters (${keyBits / 8} bytes). Current key has ${cleanedKey.length}.`;
+  const keyIsValid = asciiKeyIssues.length === 0 && keyBytes.length === requiredKeyBytes;
+  const keyValidationText = keyIsValid ? `${size} key accepted: ${requiredKeyBytes} ASCII bytes.` : `${size} requires exactly ${requiredKeyBytes} ASCII characters. Current key has ${keyBytes.length}.`;
   const ivHexLength = cleanUserHex(iv).length;
   const ivValidationText = mode === "GCM" ? `GCM expects a 96-bit nonce: 24 hex characters. Current value has ${ivHexLength}.` : mode === "CTR" ? `CTR expects a 128-bit counter block: 32 hex characters. Current value has ${ivHexLength}.` : `CBC expects a 128-bit IV: 32 hex characters. Current value has ${ivHexLength}.`;
   const ivIsValid = mode === "GCM" ? ivHexLength >= 24 : ivHexLength >= 32;
-  const nonceFingerprint = `${size}:${mode}:${cleanedKey}:${cleanUserHex(iv).slice(0, mode === "GCM" ? 24 : 32)}`;
+  const nonceFingerprint = `${size}:${mode}:${keyHex}:${cleanUserHex(iv).slice(0, mode === "GCM" ? 24 : 32)}`;
   const nonceWasSeen = ["GCM", "CTR"].includes(mode) && seenNonces.includes(nonceFingerprint);
   const inputHex = textToHex(plain).padEnd(32, "0").slice(0, 32);
   const matrix = hexPairs(inputHex).slice(0, 16);
-  const aesTrace = useMemo(() => buildAesSteps(inputHex, key, keyBits), [inputHex, key, keyBits]);
+  const aesTrace = useMemo(() => buildAesSteps(inputHex, keyHex, keyBits), [inputHex, keyHex, keyBits]);
   const roundKeys = useMemo(() => aesTrace.roundKeys[0].map(hexByte), [aesTrace.roundKeys]);
   const educationalCipher = useMemo(() => hexWord(aesTrace.ciphertext), [aesTrace.ciphertext]);
   const roundSummaries = useMemo(() => Array.from({ length: aesTrace.rounds + 1 }, (_, round) => {
@@ -168,7 +178,6 @@ export default function AESPage() {
       return;
     }
     try {
-      const keyBytes = hexToBytes(cleanedKey);
       const cryptoKey = await crypto.subtle.importKey("raw", keyBytes, "AES-" + mode, false, ["encrypt"]);
       const rawData = new TextEncoder().encode(plain);
       const data = mode === "CBC" ? applyBlockPadding(rawData, padding) : rawData;
@@ -204,7 +213,6 @@ export default function AESPage() {
       return;
     }
     try {
-      const keyBytes = hexToBytes(cleanedKey);
       const cryptoKey = await crypto.subtle.importKey("raw", keyBytes, "AES-" + mode, false, ["decrypt"]);
       const ivBytes = hexToBytes(iv);
       const algorithm = getCryptoAlgorithm(ivBytes);
@@ -220,7 +228,7 @@ export default function AESPage() {
     setMode("CBC");
     setPadding("No padding");
     setPlain("\u0000\u0011\"3DUfw\u0088\u0099\u00aa\u00bb\u00cc\u00dd\u00ee\u00ff");
-    setKey("000102030405060708090a0b0c0d0e0f");
+    setKey("AES-128 demo key");
     setIv("00000000000000000000000000000000");
     setCipher("");
     setCipherInput("");
@@ -231,7 +239,7 @@ export default function AESPage() {
     setSize("AES-128");
     setMode("CBC");
     setPadding("No padding");
-    setKey(String(vector.input.key));
+    setKey("AES-128 demo key");
     setIv(String(vector.input.iv));
     const plaintextBytes = hexToBytes(String(vector.input.plaintextHex));
     try {
@@ -251,7 +259,7 @@ export default function AESPage() {
     setMode("GCM");
     setPadding("No padding");
     setPlain("Recommended example: AES-GCM with a unique 96-bit nonce and authenticated data.");
-    setKey(randomHex(32));
+    setKey(randomAsciiKey(32));
     setIv(randomHex(12));
     setAad("course=mega-crypto-suite");
     setTagLength(128);
@@ -263,7 +271,7 @@ export default function AESPage() {
     setMode("ECB");
     setPadding("PKCS#7");
     setPlain("BLOCK-BLOCK-BLOCK-BLOCK-BLOCK-BLOCK");
-    setKey("00000000000000000000000000000000");
+    setKey("weak demo key 00");
     setIv("00000000000000000000000000000000");
     setCryptoMessage("Unsafe example loaded: ECB is educational only and leaks repeated plaintext blocks.");
   };
@@ -276,7 +284,7 @@ export default function AESPage() {
           <div className="grid gap-4">
             <label className="label">Plaintext<textarea className="field mt-1 min-h-24" value={plain} onChange={(e) => setPlain(e.target.value)} /></label>
             <div className="grid gap-3 md:grid-cols-2"><label className="label">Key size<select className="field mt-1" value={size} onChange={(e) => setSize(e.target.value)}><option>AES-128</option><option>AES-192</option><option>AES-256</option></select></label><label className="label">Mode<select className="field mt-1" value={mode} onChange={(e) => setMode(e.target.value)}><option>ECB</option><option>CBC</option><option>CFB</option><option>OFB</option><option>CTR</option><option>GCM</option></select></label></div>
-            <label className="label">Key hex<input className={`field mt-1 font-mono ${keyIsValid ? "border-emerald-300 bg-emerald-50 text-emerald-950 focus:ring-emerald-200" : "border-rose-300 bg-rose-50"}`} value={key} onChange={(e) => setKey(e.target.value)} /></label>
+            <label className="label">Key ASCII<input className={`field mt-1 font-mono ${keyIsValid ? "border-emerald-300 bg-emerald-50 text-emerald-950 focus:ring-emerald-200" : "border-rose-300 bg-rose-50"}`} value={key} onChange={(e) => setKey(e.target.value)} /></label>
             <div className={`rounded-md border p-3 text-sm ${keyIsValid ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}>{keyValidationText}</div>
             <label className="label">Ciphertext hex for decrypt<input className="field mt-1 font-mono" value={cipherInput} onChange={(e) => setCipherInput(e.target.value)} placeholder="Encrypt output is copied here, or paste ciphertext" /></label>
             <label className="label">IV / nonce hex<input className={`field mt-1 font-mono ${ivIsValid ? "border-emerald-300 bg-emerald-50" : "border-rose-300 bg-rose-50"}`} value={iv} onChange={(e) => setIv(e.target.value)} /></label>
@@ -284,7 +292,7 @@ export default function AESPage() {
             {nonceWasSeen && <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800">Nonce reuse detector: this key/mode/nonce combination was already used in this browser session history.</div>}
             {mode === "GCM" && <div className="grid gap-3 md:grid-cols-2"><label className="label">AAD<input className="field mt-1" value={aad} onChange={(e) => setAad(e.target.value)} /></label><label className="label">GCM tag length<select className="field mt-1" value={tagLength} onChange={(e) => setTagLength(Number(e.target.value))}><option value={128}>128 bits</option><option value={120}>120 bits</option><option value={112}>112 bits</option><option value={104}>104 bits</option><option value={96}>96 bits</option><option value={64}>64 bits</option></select></label></div>}
             <label className="label">Padding<select className="field mt-1" value={padding} onChange={(e) => setPadding(e.target.value)}><option>PKCS#7</option><option>Zero padding</option><option>No padding</option></select></label>
-            <div className="flex flex-wrap gap-2"><button className="btn" onClick={encryptWithWebCrypto}>Encrypt</button><button className="btn" onClick={decryptWithWebCrypto}>Decrypt</button><button className="btn" onClick={verifyAesVector}>Verify AES test vector</button><button className="btn" onClick={loadRecommended}>Recommended sample</button><button className="btn" onClick={loadUnsafe}>Unsafe sample</button><button className="btn" onClick={loadNistAesVector}>NIST-style vector</button><Link className="btn" to="/algorithms/symmetric/aes-128-step">Open internal operations</Link><button className="btn" onClick={() => setKey(randomHex(keyBits / 8))}>Random {size} key</button><button className="btn" onClick={() => setIv(randomHex(mode === "GCM" ? 12 : 16))}>Random IV</button></div>
+            <div className="flex flex-wrap gap-2"><button className="btn" onClick={encryptWithWebCrypto}>Encrypt</button><button className="btn" onClick={decryptWithWebCrypto}>Decrypt</button><button className="btn" onClick={verifyAesVector}>Verify AES test vector</button><button className="btn" onClick={loadRecommended}>Recommended sample</button><button className="btn" onClick={loadUnsafe}>Unsafe sample</button><button className="btn" onClick={loadNistAesVector}>NIST-style vector</button><Link className="btn" to="/algorithms/symmetric/aes-128-step">Open internal operations</Link><button className="btn" onClick={() => setKey(randomAsciiKey(keyBits / 8))}>Random {size} key</button><button className="btn" onClick={() => setIv(randomHex(mode === "GCM" ? 12 : 16))}>Random IV</button></div>
             {testVectorMessage && <div className={`rounded-md border p-3 text-sm font-semibold ${testVectorMessage.startsWith("PASS") ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"}`}>{testVectorMessage}</div>}
           </div>
         </InputPanel>
@@ -351,7 +359,7 @@ export default function AESPage() {
           ))}
         </div>
       </section>
-      <section className="grid gap-6 xl:grid-cols-2"><div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-semibold">Learning notes</h2><p className="mt-2 text-sm text-slate-600">AES works on a 4x4 byte state. SubBytes provides nonlinear substitution from the real AES S-box, ShiftRows moves bytes across columns, MixColumns diffuses each column, and AddRoundKey injects the round key. AES-128 has 10 rounds, AES-192 has 12, and AES-256 has 14.</p></div><div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-semibold">Mistakes and export</h2><WarningBadge>ECB leaks repeated blocks. GCM and CTR require nonce uniqueness under a key. Web Crypto requires exact raw key length for the selected AES size.</WarningBadge><div className="mt-4"><ExportReportButton title="AES" data={{ plain, key, iv, mode, size, padding, aad, tagLength, educationalCipher, cipher, cipherInput }} /></div></div></section>
+      <section className="grid gap-6 xl:grid-cols-2"><div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-semibold">Learning notes</h2><p className="mt-2 text-sm text-slate-600">AES works on a 4x4 byte state. SubBytes provides nonlinear substitution from the real AES S-box, ShiftRows moves bytes across columns, MixColumns diffuses each column, and AddRoundKey injects the round key. AES-128 has 10 rounds, AES-192 has 12, and AES-256 has 14.</p></div><div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-semibold">Mistakes and export</h2><WarningBadge>ECB leaks repeated blocks. GCM and CTR require nonce uniqueness under a key. Web Crypto requires exact raw key length for the selected AES size.</WarningBadge><div className="mt-4"><ExportReportButton title="AES" data={{ plain, key, keyHex, iv, mode, size, padding, aad, tagLength, educationalCipher, cipher, cipherInput }} /></div></div></section>
     </div>
   );
 }
