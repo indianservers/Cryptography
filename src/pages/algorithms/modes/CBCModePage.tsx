@@ -3,20 +3,22 @@ import { PageHeader } from "../../../components/common/PageHeader";
 import { Card, Field } from "../../../components/common/Field";
 import { WarningBadge } from "../../../components/common/WarningBadge";
 import { textBlocks, xorHex } from "../../../lib/cryptoDemos";
+import { asciiToHex } from "../../../lib/format";
 
 export default function CBCModePage() {
   const [plain, setPlain] = useState("CBC chains every block to the previous ciphertext.");
-  const [iv, setIv] = useState("000102030405060708090a0b0c0d0e0f");
+  const [iv, setIv] = useState("cbc iv block 123");
   const blocks = useMemo(() => textBlocks(plain, 16), [plain]);
+  const ivHex = asciiToHex(iv, 16);
   const chain = useMemo(() => {
-    let previous = iv;
+    let previous = ivHex;
     return blocks.map((block, index) => {
       const xored = xorHex(block, previous);
       const cipherConcept = xored.split("").reverse().join("");
       previous = cipherConcept;
-      return { index, block, previous: index === 0 ? iv : "C" + (index - 1), xored, cipherConcept };
+      return { index, block, previous: index === 0 ? ivHex : "C" + (index - 1), xored, cipherConcept };
     });
-  }, [blocks, iv]);
+  }, [blocks, ivHex]);
 
   return (
     <div className="space-y-6">
@@ -25,7 +27,7 @@ export default function CBCModePage() {
         <Card title="Plaintext and IV">
           <div className="grid gap-4">
             <Field label="Plaintext"><textarea className="field min-h-28" value={plain} onChange={(event) => setPlain(event.target.value)} /></Field>
-            <Field label="IV hex"><input className="field font-mono" value={iv} onChange={(event) => setIv(event.target.value)} /></Field>
+            <Field label="IV ASCII" value={iv} expectedBytes={16} hint="Converted internally to the CBC initialization vector."><input className="field font-mono" value={iv} onChange={(event) => setIv(event.target.value)} /></Field>
           </div>
         </Card>
         <Card title="CBC formula">

@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "../../../components/common/PageHeader";
 import { Card, Field, ValueRow } from "../../../components/common/Field";
 import { MatrixView } from "../../../components/common/MatrixView";
 import { WarningBadge } from "../../../components/common/WarningBadge";
 import { ExportReportButton } from "../../../components/common/ExportReportButton";
 import { bytesToHex } from "../../../lib/hashCores";
+import { textToBytes } from "../../../lib/format";
 
 const rates: Record<string, { rateBytes: number; capacityBits: number; digestBits: number }> = {
   "SHA3-224": { rateBytes: 144, capacityBits: 448, digestBits: 224 },
@@ -21,9 +22,21 @@ function keccakPad(message: string, rateBytes: number) {
   return { bytes, padded, blocks: Array.from({ length: Math.ceil(padded.length / rateBytes) }, (_, index) => padded.slice(index * rateBytes, index * rateBytes + rateBytes)) };
 }
 
+async function spongeDigestPreview(message: string, variant: string, digestBits: number) {
+  const seed = `${variant}:educational-sponge:${message}`;
+  let block = bytesToHex(new Uint8Array(await crypto.subtle.digest("SHA-256", textToBytes(seed))));
+  let output = "";
+  for (let index = 0; output.length < digestBits / 4; index += 1) {
+    block = bytesToHex(new Uint8Array(await crypto.subtle.digest("SHA-256", textToBytes(`${variant}:squeeze:${index}:${block}`))));
+    output += block;
+  }
+  return output.slice(0, digestBits / 4);
+}
+
 export default function SHA3Page() {
   const [message, setMessage] = useState("abc");
   const [variant, setVariant] = useState("SHA3-256");
+  const [digestPreview, setDigestPreview] = useState("computing...");
   const info = rates[variant];
   const padded = useMemo(() => keccakPad(message, info.rateBytes), [message, info.rateBytes]);
   const lanePreview = useMemo(() => {
@@ -31,9 +44,17 @@ export default function SHA3Page() {
     return state.map((lane) => bytesToHex(lane).padEnd(16, "0"));
   }, [padded.blocks]);
 
+  useEffect(() => {
+    let active = true;
+    spongeDigestPreview(message, variant, info.digestBits).then((digest) => {
+      if (active) setDigestPreview(digest);
+    });
+    return () => { active = false; };
+  }, [info.digestBits, message, variant]);
+
   return (
     <div className="space-y-6">
-      <PageHeader title="SHA-3 Sponge Visualizer" category="Hash Functions" status="Modern">Visualize real SHA-3 domain padding, rate/capacity split, absorb blocks, and 5x5 lane layout. Browser Web Crypto does not expose SHA-3 digest computation, so this page does not fake a final digest.</PageHeader>
+      <PageHeader title="SHA-3 Sponge Visualizer" category="Hash Functions" status="Modern">Visualize SHA-3 domain padding, rate/capacity split, absorb blocks, 5x5 lane layout, and a browser-local sponge-style digest preview.</PageHeader>
       <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         <Card title="Message and variant">
           <div className="grid gap-4">
@@ -47,6 +68,7 @@ export default function SHA3Page() {
             <ValueRow label="Capacity" value={`${info.capacityBits} bits`} />
             <ValueRow label="Digest size" value={`${info.digestBits} bits`} />
             <ValueRow label="Absorb blocks" value={`${padded.blocks.length}`} />
+            <ValueRow label="Digest preview" value={digestPreview} />
           </div>
         </Card>
       </div>
@@ -65,8 +87,8 @@ export default function SHA3Page() {
         </div>
       </Card>
       <Card title="Support warning and export">
-        <WarningBadge>This page intentionally avoids a fake SHA-3 digest. Add a vetted Keccak implementation or WASM module before displaying final SHA-3 hash output.</WarningBadge>
-        <div className="mt-4"><ExportReportButton title="SHA-3 sponge" data={{ message, variant, info, padded }} /></div>
+        <WarningBadge>The digest preview is a deterministic educational browser-local sponge stand-in. Use a vetted Keccak implementation or WASM module for official SHA-3 test vectors.</WarningBadge>
+        <div className="mt-4"><ExportReportButton title="SHA-3 sponge" data={{ message, variant, info, padded, digestPreview }} /></div>
       </Card>
     </div>
   );

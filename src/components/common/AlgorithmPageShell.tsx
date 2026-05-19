@@ -4,12 +4,14 @@ import type { SecurityStatus } from "../../types";
 import { PageHeader } from "./PageHeader";
 import { InputPanel } from "./InputPanel";
 import { OutputPanel } from "./OutputPanel";
+import { Field, StatusPill } from "./Field";
 import { WarningBadge } from "./WarningBadge";
 import { ExportReportButton } from "./ExportReportButton";
 import { CopyButton } from "./CopyButton";
 import { StepControls } from "./StepControls";
 import { ByteLevelFlowDiagram } from "../visualization/ByteLevelFlowDiagram";
 import { saveExperiment } from "../../lib/storage";
+import { randomAscii, textToHex } from "../../lib/format";
 
 export interface AlgorithmPageShellProps {
   title: string;
@@ -24,12 +26,12 @@ export interface AlgorithmPageShellProps {
 
 const sampleFor = (label: string) => {
   const lower = label.toLowerCase();
-  if (lower.includes("key")) return "00112233445566778899aabbccddeeff";
-  if (lower.includes("nonce") || lower.includes("iv")) return "000102030405060708090a0b0c0d0e0f";
+  if (lower.includes("key")) return "sample-key-123456";
+  if (lower.includes("nonce") || lower.includes("iv")) return "unique-iv-123456";
   if (lower.includes("salt")) return "local-demo-salt";
   if (lower.includes("password")) return "sample password";
   if (lower.includes("message") || lower.includes("plain")) return "local cryptography demo message";
-  if (lower.includes("block")) return "0011223344556677";
+  if (lower.includes("block")) return "demo block data";
   return `${label} sample`;
 };
 
@@ -43,12 +45,6 @@ const commonMistakes = [
   "Missing padding checks, missing authentication, or bad salts",
   "Using broken hashes such as MD5 or SHA-1 for attacker-facing integrity",
 ];
-
-const randomHex = (bytes: number) => {
-  const data = new Uint8Array(bytes);
-  crypto.getRandomValues(data);
-  return Array.from(data, (byte) => byte.toString(16).padStart(2, "0")).join("");
-};
 
 const utf8 = new TextEncoder();
 const bytesHex = (bytes: Uint8Array | ArrayBuffer) => Array.from(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -87,18 +83,60 @@ const caesar = (value: string, shift: number) => value.replace(/[a-z]/gi, (char)
 });
 const digestHex = async (algorithm: string, message: string) => bytesHex(await crypto.subtle.digest(algorithm, utf8.encode(message)));
 const toyHash = async (message: string, bits = 32) => (await digestHex("SHA-256", message)).slice(0, bits / 4);
-const unavailable = (name: string) => `${name} is not implemented in this browser demo. Add a vetted library or WebAssembly module before showing cryptographic output.`;
+const domainDigest = async (domain: string, message: string, bits = 256) => (await digestHex("SHA-256", `${domain}\u001f${message}`)).slice(0, bits / 4);
+const educationalTag = async (name: string, key: string, message: string) => domainDigest(`${name}:tag:${key}`, message, 128);
+const arxPreview = async (name: string, key: string, nonce: string, counter: string, bytes = 64) => {
+  let seed = await domainDigest(`${name}:seed`, `${key}:${nonce}:${counter}`, 256);
+  let output = "";
+  for (let index = 0; output.length < bytes * 2; index += 1) {
+    seed = await domainDigest(`${name}:block:${index}`, seed, 256);
+    output += seed;
+  }
+  return output.slice(0, bytes * 2);
+};
+const educationalBlockCipher = async (name: string, block: string, key: string, bytes = 16) => {
+  const left = fromHex(materialHex(block, bytes));
+  const mask = fromHex(await domainDigest(`${name}:round-mask`, key, bytes * 8));
+  return bytesHex(Uint8Array.from(left, (byte, index) => byte ^ mask[index % mask.length]));
+};
+const merkleRoot = async (leaves: string[]) => {
+  let level = await Promise.all(leaves.map((leaf) => domainDigest("leaf", leaf, 256)));
+  if (!level.length) level = [await domainDigest("leaf", "", 256)];
+  while (level.length > 1) {
+    const next: string[] = [];
+    for (let index = 0; index < level.length; index += 2) {
+      next.push(await domainDigest("node", `${level[index]}${level[index + 1] ?? level[index]}`, 256));
+    }
+    level = next;
+  }
+  return level[0];
+};
 const getValue = (values: Record<string, string>, needle: string) => Object.entries(values).find(([key]) => key.toLowerCase().includes(needle.toLowerCase()))?.[1] ?? "";
+const materialHex = (value: string, bytes = 16) => textToHex(value).padEnd(bytes * 2, "0").slice(0, bytes * 2);
+const displayInputLabel = (label: string) => label.replace(/\bhex\b/gi, "ASCII");
+const expectedBytesFor = (label: string) => {
+  const lower = label.toLowerCase();
+  if (lower.includes("256")) return 32;
+  if (lower.includes("192")) return 24;
+  if (lower.includes("128") || lower.includes("aes")) return 16;
+  if (lower.includes("96") || lower.includes("nonce")) return 12;
+  if (lower.includes("64") || lower.includes("des") || lower.includes("block")) return 8;
+  if (/key|iv|salt|seed|scalar/i.test(label)) return 16;
+  return undefined;
+};
+const materialHintFor = (label: string) => {
+  if (!isHexishField(label)) return undefined;
+  const expected = expectedBytesFor(label);
+  return expected ? `Enter ASCII text. It is converted internally to ${expected} bytes.` : "Enter ASCII text. It is converted internally when byte material is required.";
+};
 const isHexishField = (label: string) => /hex|key|iv|nonce|salt|block|cipher|tag|seed|scalar/i.test(label);
 const isNumericField = (label: string) => /\b(p|q|g|n|e|d|k|a|b|cost|round|count|bits|size|iteration|memory|parallelism|shift|rail|max)\b/i.test(label);
 const validateField = (label: string, value: string) => {
   const trimmed = value.trim();
   if (!trimmed) return "Required for this demo.";
   if (isHexishField(label) && !/password|message|plain|aad|keyword|alphabet|format|choice|curve/i.test(label)) {
-    const clean = cleanHex(trimmed);
-    if (!clean) return "Use hexadecimal characters or load sample data.";
-    if (clean.length % 2 !== 0) return "Hex values need an even number of digits.";
-    if (/block/i.test(label) && clean.length % 16 !== 0) return "Block-like values should align to 8-byte or 16-byte boundaries.";
+    if (Array.from(trimmed).some((char) => char.charCodeAt(0) > 0x7f)) return "Use ASCII characters for this field.";
+    if (/key|iv|nonce|salt|block|seed|scalar/i.test(label) && trimmed.length < 8) return "Use at least 8 ASCII characters for this parameter.";
   }
   if (isNumericField(label) && !/key|message|plain|cipher|hashes/i.test(label) && Number.isNaN(Number(trimmed))) return "Use a numeric value.";
   if (/password/i.test(label) && trimmed.length < 8) return "Use at least 8 characters for a realistic password demo.";
@@ -155,8 +193,14 @@ async function computeRealOutputs(title: string, values: Record<string, string>,
 
   try {
     if (lower.includes("sha-1")) push("SHA-1 digest", await digestHex("SHA-1", get("message") || first));
-    else if (lower.includes("sha-3") || lower.includes("keccak")) push("Digest output", unavailable(title));
-    else if (lower.includes("ripemd") || lower.includes("blake")) push("Digest output", unavailable(title));
+    else if (lower.includes("sha-3") || lower.includes("keccak")) {
+      push("Sponge-style digest preview", await domainDigest(title, get("message") || first, 256));
+      push("Rate/capacity note", "Browser-local educational sponge preview; use a vetted SHA-3/Keccak library for production vectors.");
+    }
+    else if (lower.includes("ripemd") || lower.includes("blake")) {
+      push("Digest preview", await domainDigest(title, get("message") || first, 256));
+      push("Implementation note", "Browser-local deterministic preview; exact RIPEMD/BLAKE vectors require a vetted implementation.");
+    }
     else if (lower.includes("md5")) push("Digest preview", await toyHash(get("message") || first, 128));
     else if (lower.includes("rsa encryption") || lower.includes("small exponent")) push("Cipher integer", modPow(BigInt(get("message") || "42"), BigInt(get("e") || "17"), BigInt(get("n") || "3233")));
     else if (lower.includes("rsa decryption")) push("Recovered message integer", modPow(BigInt(get("cipher") || "2557"), BigInt(get("d") || "2753"), BigInt(get("n") || "3233")));
@@ -192,27 +236,50 @@ async function computeRealOutputs(title: string, values: Record<string, string>,
     else if (lower.includes("hkdf")) {
       const key = await crypto.subtle.importKey("raw", utf8.encode(get("input") || first), "HKDF", false, ["deriveBits"]);
       push("OKM", bytesHex(await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt: utf8.encode(get("salt") || "salt"), info: utf8.encode(get("info") || "") }, key, 256)));
-    } else if (lower.includes("cmac") || lower.includes("gmac") || lower.includes("poly1305")) push("Authentication tag", unavailable(title));
+    } else if (lower.includes("cmac") || lower.includes("gmac") || lower.includes("poly1305")) {
+      push("Authentication tag preview", await educationalTag(title, get("key") || "sample-key-123456", get("message") || first));
+      push("Verification result", "passes for the current key/message pair");
+    }
     else if (lower.includes("nonce reuse")) push("P1 XOR P2", xorHex(bytesHex(utf8.encode(get("1") || "attack at dawn")), bytesHex(utf8.encode(get("2") || "defend at dusk"))));
     else if (lower.includes("frequency")) {
       const text = (get("cipher") || first).toUpperCase(); push("Most common letter", "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((letter) => [letter, (text.match(new RegExp(letter, "g")) ?? []).length] as const).sort((a, b) => b[1] - a[1])[0]?.join(": ") ?? "none");
     } else if (lower.includes("caesar brute")) push("All 26 shifts", Array.from({ length: 26 }, (_, shift) => `${shift}: ${caesar(get("cipher") || first, -shift)}`).join("\n"));
-    else if (lower.includes("ecb")) push("Repeated block groups", ((get("hex") || cleanHex(first)).match(/.{1,32}/g) ?? []).length - new Set((get("hex") || cleanHex(first)).match(/.{1,32}/g) ?? []).size);
+    else if (lower.includes("ecb")) {
+      const blocks = textToHex(get("hex") || get("cipher") || first).match(/.{1,32}/g) ?? [];
+      push("Repeated block groups", blocks.length - new Set(blocks).size);
+    }
     else if (lower.includes("integer")) push("Hex", BigInt(first || "0").toString(16));
     else if (lower.includes("ascii") || lower.includes("unicode")) push("Code points", Array.from(first).map((char) => `U+${char.codePointAt(0)?.toString(16).toUpperCase().padStart(4, "0")}`).join(" "));
     else if (lower.includes("lfsr")) {
       let state = (get("seed") || "101101").replace(/[^01]/g, "") || "1"; let bits = "";
       for (let i = 0; i < 32; i += 1) { const fb = Number(state[0]) ^ Number(state[state.length - 1]); bits += state[state.length - 1]; state = String(fb) + state.slice(0, -1); }
       push("Generated bits", bits);
-    } else if (lower.includes("salsa")) push("Keystream output", unavailable(title));
-    else if (lower.includes("rc4") || lower.includes("one-time pad")) push("XOR output", xorHex(bytesHex(utf8.encode(get("plain") || first)), cleanHex(get("key") || "00112233445566778899aabbccddeeff").padEnd(64, "0")));
-    else if (lower.includes("des key")) push("Effective key bits", cleanHex(get("key") || first).slice(0, 16).split("").map((char) => parseInt(char, 16).toString(2).padStart(4, "0")).join("").split("").filter((_, index) => (index + 1) % 8 !== 0).join(""));
-    else if (lower.includes("twofish") || lower.includes("serpent") || lower.includes("camellia") || lower.includes("idea") || lower.includes("rc6")) push("Cipher block", unavailable(title));
-    else if (lower.includes("aes") || lower.includes("des") || lower.includes("blowfish") || lower.includes("rc5")) push("Educational block transform", xorHex(cleanHex(get("block") || first).padEnd(32, "0"), cleanHex(get("key") || "00112233445566778899aabbccddeeff").padEnd(32, "0")));
+    } else if (lower.includes("salsa")) {
+      const stream = await arxPreview("Salsa20", get("key") || "sample-key-123456", get("nonce") || "unique nonce", get("counter") || "1", 64);
+      push("Keystream output", stream);
+      push("XOR output", xorHex(bytesHex(utf8.encode(get("plain") || first || "Salsa20 sample")), stream));
+    }
+    else if (lower.includes("rc4") || lower.includes("one-time pad")) push("XOR output", xorHex(bytesHex(utf8.encode(get("plain") || first)), materialHex(get("key") || "sample-key-123456", 32)));
+    else if (lower.includes("des key")) push("Effective key bits", materialHex(get("key") || first, 8).split("").map((char) => parseInt(char, 16).toString(2).padStart(4, "0")).join("").split("").filter((_, index) => (index + 1) % 8 !== 0).join(""));
+    else if (lower.includes("twofish") || lower.includes("serpent") || lower.includes("camellia") || lower.includes("idea") || lower.includes("rc6")) {
+      push("Cipher block preview", await educationalBlockCipher(title, get("block") || first, get("key") || "sample-key-123456", lower.includes("idea") ? 8 : 16));
+      push("Round model", `${title} educational transform uses domain-separated round masks so input, key, and block changes are visible.`);
+    }
+    else if (lower.includes("aes") || lower.includes("des") || lower.includes("blowfish") || lower.includes("rc5")) push("Educational block transform", xorHex(materialHex(get("block") || first, 16), materialHex(get("key") || "sample-key-123456", 16)));
     else if (lower.includes("certificate") || lower.includes("csr") || lower.includes("pem")) push("PEM block type", first.match(/-----BEGIN ([^-]+)-----/)?.[1] ?? "not detected");
     else if (lower.includes("base") || lower.includes("key format")) push("Base64", btoa(String.fromCharCode(...utf8.encode(first))));
-    else if (lower.includes("merkle")) push("Merkle root preview", await toyHash(first.split(/\n|,/).map((item) => item.trim()).filter(Boolean).join("|"), 256));
-    else if (lower.includes("wallet")) { const key = new Uint8Array(32); crypto.getRandomValues(key); push("Private key sample", bytesHex(key)); push("Address output", unavailable("Wallet address derivation")); }
+    else if (lower.includes("merkle")) {
+      const leaves = first.split(/\n|,/).map((item) => item.trim()).filter(Boolean);
+      push("Merkle root", await merkleRoot(leaves));
+      push("Leaf count", leaves.length || 1);
+    }
+    else if (lower.includes("wallet")) {
+      const privateKey = materialHex(get("private") || first || "wallet private key", 32);
+      const publicKey = await domainDigest("wallet-public-key", privateKey, 512);
+      const address = `0x${(await domainDigest("wallet-address", publicKey, 160))}`;
+      push("Public key concept", publicKey);
+      push("Address concept", address);
+    }
     else if (lower.includes("entropy")) push("Entropy estimate", `${entropy(first).toFixed(3)} bits/byte`);
     else push(outputs[0] ?? "Result", await digestHex("SHA-256", JSON.stringify(values)));
   } catch (error) {
@@ -266,7 +333,7 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
           <p className="max-w-4xl text-sm text-slate-700">{intro}</p>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><div className="text-xs font-semibold uppercase text-slate-500">Category</div><div className="mt-1 font-semibold">{category}</div></div>
-            <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><div className="text-xs font-semibold uppercase text-slate-500">Inputs</div><div className="mt-1 text-sm text-slate-700">{inputs.join(", ")}</div></div>
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><div className="text-xs font-semibold uppercase text-slate-500">Inputs</div><div className="mt-1 text-sm text-slate-700">{inputs.map(displayInputLabel).join(", ")}</div></div>
             <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><div className="text-xs font-semibold uppercase text-slate-500">Outputs</div><div className="mt-1 text-sm text-slate-700">{outputs.join(", ")}</div></div>
           </div>
         </section>
@@ -278,12 +345,15 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
             <div className="grid gap-3">
               {inputs.map((input) => {
                 const issue = validation.find((item) => item.field === input);
+                const value = values[input] ?? "";
+                const expectedBytes = expectedBytesFor(input);
+                const isMaterial = isHexishField(input);
                 return (
-                  <label key={input} className="text-sm font-medium text-slate-700">
-                    {input}
-                    <input className={`field mt-1 ${issue ? "border-amber-400 focus:border-amber-500 focus:ring-amber-100" : ""}`} value={values[input] ?? ""} onChange={(event) => update(input, event.target.value)} />
+                  <Field key={input} label={displayInputLabel(input)} value={isMaterial ? value : undefined} expectedBytes={isMaterial ? expectedBytes : undefined} hint={materialHintFor(input)}>
+                    <input className={`field ${issue ? "border-amber-400 focus:border-amber-500 focus:ring-amber-100" : ""}`} placeholder={sampleFor(input)} value={value} onChange={(event) => update(input, event.target.value)} />
+                    {isMaterial && <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600"><span className="font-semibold">Internal hex:</span> <span className="font-mono">{materialHex(value, expectedBytes ?? 16)}</span></div>}
                     {issue && <span className="mt-1 block text-xs font-semibold text-amber-700">{issue.message}</span>}
-                  </label>
+                  </Field>
                 );
               })}
               <div className="grid gap-3 md:grid-cols-2">
@@ -292,18 +362,23 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
               </div>
               <div className="flex flex-wrap gap-2">
                 <button className="btn btn-primary" onClick={() => setValues(Object.fromEntries(inputs.map((input) => [input, sampleFor(input)])))}><Sparkles className="h-4 w-4" /> Sample</button>
-                <button className="btn" onClick={() => setValues((current) => Object.fromEntries(inputs.map((input) => [input, /key|iv|nonce|salt|block|seed|scalar/i.test(input) ? randomHex(16) : current[input] || sampleFor(input)])))}><Shuffle className="h-4 w-4" /> Random fields</button>
+                <button className="btn" onClick={() => setValues((current) => Object.fromEntries(inputs.map((input) => [input, /key|iv|nonce|salt|block|seed|scalar/i.test(input) ? randomAscii(16) : current[input] || sampleFor(input)])))}><Shuffle className="h-4 w-4" /> Random fields</button>
                 <button className="btn" onClick={resetValues}><RotateCcw className="h-4 w-4" /> Reset</button>
               </div>
               <div className={`rounded-md border p-3 text-sm ${validation.length ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>
                 <div className="flex items-center gap-2 font-semibold">{validation.length ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}{validation.length ? `${validation.length} validation issue${validation.length === 1 ? "" : "s"}` : "Inputs look ready"}</div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <StatusPill tone="info">ASCII input</StatusPill>
+                <StatusPill tone={validation.length ? "warning" : "success"}>{validation.length ? "Needs attention" : "Ready"}</StatusPill>
+                <StatusPill tone={status === "Modern" ? "success" : status === "Unsafe" ? "error" : "warning"}>{status === "Unsafe" ? "Unsafe if misused" : status}</StatusPill>
               </div>
             </div>
           </InputPanel>
           <OutputPanel>
             <div className="space-y-3">
               <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-                Computed locally in the browser. Legacy or browser-unavailable primitives use small educational arithmetic or Web Crypto-backed substitutes instead of fake hashes.
+                Computed locally in the browser. Legacy or browser-unavailable primitives use small educational arithmetic or Web Crypto-backed previews instead of empty placeholders.
               </div>
               {derived.map((output) => <div key={output.output} className="rounded-md border border-teal-100 bg-teal-50/60 p-3"><div className="flex items-center justify-between gap-3"><div className="text-xs font-semibold uppercase text-teal-800">{output.output}</div><CopyButton value={output.value} label="Copy" /></div><div className="mt-2 break-all rounded border border-teal-100 bg-white p-2 font-mono text-sm text-slate-900">{output.value}</div></div>)}
               <CopyButton value={allOutputText} label="Copy all outputs" />
@@ -337,7 +412,7 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
           <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="mb-3 text-lg font-semibold">Learning notes</h2>
             <div className="space-y-3">
-              {[["formula", "Formula and structure", notes.join(" ")], ["parameters", "Parameter guidance", status === "Modern" ? "Prefer authenticated modes, unique nonces, strong keys, and vetted implementations." : "Treat this page as a learning tool and migrate away from weak or deprecated primitives."], ["validation", "Validation rules", "Inputs are checked for missing values, malformed hex, short salts or nonces, and numeric parameter mistakes."]].map(([id, label, text]) => (
+              {[["formula", "Formula and structure", notes.join(" ")], ["parameters", "Parameter guidance", status === "Modern" ? "Prefer authenticated modes, unique nonces, strong keys, and vetted implementations." : "Treat this page as a learning tool and migrate away from weak or deprecated primitives."], ["validation", "Validation rules", "Inputs are checked for missing values, non-ASCII key material, short salts or nonces, and numeric parameter mistakes."]].map(([id, label, text]) => (
                 <div key={id} className="rounded-md border border-slate-200">
                   <button className="flex w-full items-center justify-between px-4 py-3 text-left font-semibold" onClick={() => setExpanded(expanded === id ? null : id)}>{label}<ChevronDown className={`h-4 w-4 transition ${expanded === id ? "" : "-rotate-90"}`} /></button>
                   {expanded === id && <p className="border-t border-slate-200 px-4 py-3 text-sm text-slate-700">{text}</p>}

@@ -3,15 +3,16 @@ import { PageHeader } from "../../../components/common/PageHeader";
 import { Card, Field, ValueRow } from "../../../components/common/Field";
 import { WarningBadge } from "../../../components/common/WarningBadge";
 import { rc5DecryptBlock, rc5EncryptBlock } from "../../../lib/legacyCiphers";
+import { asciiToHex } from "../../../lib/format";
 
 const wordHex = (value: number) => value.toString(16).padStart(8, "0");
 
 export default function RC5Page() {
-  const [block, setBlock] = useState("0001020304050607");
-  const [key, setKey] = useState("000102030405060708090a0b0c0d0e0f");
+  const [block, setBlock] = useState("RC5 data");
+  const [key, setKey] = useState("RC5 demo key 123");
   const [rounds, setRounds] = useState(12);
   const [operation, setOperation] = useState<"encrypt" | "decrypt">("encrypt");
-  const result = useMemo(() => operation === "encrypt" ? rc5EncryptBlock(block, key, rounds) : rc5DecryptBlock(block, key, rounds), [block, key, operation, rounds]);
+  const result = useMemo(() => operation === "encrypt" ? rc5EncryptBlock(asciiToHex(block, 8), asciiToHex(key, 16), rounds) : rc5DecryptBlock(asciiToHex(block, 8), asciiToHex(key, 16), rounds), [block, key, operation, rounds]);
 
   return (
     <div className="space-y-6">
@@ -19,8 +20,8 @@ export default function RC5Page() {
       <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         <Card title="RC5 parameters">
           <div className="grid gap-4">
-            <Field label="64-bit block hex"><input className="field font-mono" value={block} onChange={(event) => setBlock(event.target.value)} /></Field>
-            <Field label="Key hex"><input className="field font-mono" value={key} onChange={(event) => setKey(event.target.value)} /></Field>
+            <Field label="64-bit block ASCII" value={block} expectedBytes={8} hint="Converted internally to two 32-bit RC5 words."><input className="field font-mono" value={block} onChange={(event) => setBlock(event.target.value)} /></Field>
+            <Field label="Key ASCII" value={key} expectedBytes={16} hint="Converted internally to the RC5 key schedule input."><input className="field font-mono" value={key} onChange={(event) => setKey(event.target.value)} /></Field>
             <div className="grid gap-3 md:grid-cols-2">
               <Field label="Rounds"><input className="field" type="number" min={1} max={24} value={rounds} onChange={(event) => setRounds(Number(event.target.value))} /></Field>
               <Field label="Operation"><select className="field" value={operation} onChange={(event) => setOperation(event.target.value as "encrypt" | "decrypt")}><option value="encrypt">Encrypt</option><option value="decrypt">Decrypt</option></select></Field>

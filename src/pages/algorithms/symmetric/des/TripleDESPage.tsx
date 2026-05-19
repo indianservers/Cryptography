@@ -4,14 +4,15 @@ import { Card, Field, ValueRow } from "../../../../components/common/Field";
 import { WarningBadge } from "../../../../components/common/WarningBadge";
 import { MatrixView } from "../../../../components/common/MatrixView";
 import { tripleDesEde } from "./desEducationalCore";
+import { asciiToHex } from "../../../../lib/format";
 
 export default function TripleDESPage() {
-  const [block, setBlock] = useState("0123456789abcdef");
-  const [key1, setKey1] = useState("133457799bbcdff1");
-  const [key2, setKey2] = useState("1f1f1f1f0e0e0e0e");
-  const [key3, setKey3] = useState("0f1571c947d9e859");
+  const [block, setBlock] = useState("3DES blk");
+  const [key1, setKey1] = useState("first k!");
+  const [key2, setKey2] = useState("second k");
+  const [key3, setKey3] = useState("third k!");
   const [direction, setDirection] = useState<"encrypt" | "decrypt">("encrypt");
-  const trace = useMemo(() => tripleDesEde(block, key1, key2, key3, direction === "decrypt"), [block, key1, key2, key3, direction]);
+  const trace = useMemo(() => tripleDesEde(asciiToHex(block, 8), asciiToHex(key1, 8), asciiToHex(key2, 8), asciiToHex(key3, 8), direction === "decrypt"), [block, key1, key2, key3, direction]);
 
   return (
     <div className="space-y-6">
@@ -19,11 +20,11 @@ export default function TripleDESPage() {
       <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         <Card title="64-bit block and three DES keys">
           <div className="grid gap-4">
-            <Field label="Block hex, 64 bits"><input className="field font-mono" value={block} onChange={(event) => setBlock(event.target.value)} /></Field>
+            <Field label="Block ASCII, 64 bits" value={block} expectedBytes={8} hint="Converted internally to the 3DES input block."><input className="field font-mono" value={block} onChange={(event) => setBlock(event.target.value)} /></Field>
             <div className="grid gap-3 md:grid-cols-3">
-              <Field label="K1 hex"><input className="field font-mono" value={key1} onChange={(event) => setKey1(event.target.value)} /></Field>
-              <Field label="K2 hex"><input className="field font-mono" value={key2} onChange={(event) => setKey2(event.target.value)} /></Field>
-              <Field label="K3 hex"><input className="field font-mono" value={key3} onChange={(event) => setKey3(event.target.value)} /></Field>
+              <Field label="K1 ASCII" value={key1} expectedBytes={8}><input className="field font-mono" value={key1} onChange={(event) => setKey1(event.target.value)} /></Field>
+              <Field label="K2 ASCII" value={key2} expectedBytes={8}><input className="field font-mono" value={key2} onChange={(event) => setKey2(event.target.value)} /></Field>
+              <Field label="K3 ASCII" value={key3} expectedBytes={8}><input className="field font-mono" value={key3} onChange={(event) => setKey3(event.target.value)} /></Field>
             </div>
             <Field label="Operation"><select className="field" value={direction} onChange={(event) => setDirection(event.target.value as "encrypt" | "decrypt")}><option value="encrypt">Encrypt EDE</option><option value="decrypt">Decrypt DED</option></select></Field>
           </div>

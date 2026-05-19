@@ -4,13 +4,16 @@ import { Card, Field, ValueRow } from "../../../components/common/Field";
 import { MatrixView } from "../../../components/common/MatrixView";
 import { WarningBadge } from "../../../components/common/WarningBadge";
 import { chachaBlock, textBlocks, xorHex } from "../../../lib/cryptoDemos";
+import { asciiToHex } from "../../../lib/format";
 
 export default function ChaCha20Page() {
-  const [key, setKey] = useState("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
-  const [nonce, setNonce] = useState("000000090000004a00000000");
+  const [key, setKey] = useState("ChaCha20 demo key material 12345");
+  const [nonce, setNonce] = useState("nonce text12");
   const [counter, setCounter] = useState(1);
   const [plain, setPlain] = useState("Ladies and Gentlemen of the class of 99");
-  const block = useMemo(() => chachaBlock(key, nonce, counter), [counter, key, nonce]);
+  const keyHex = asciiToHex(key, 32);
+  const nonceHex = asciiToHex(nonce, 12);
+  const block = useMemo(() => chachaBlock(keyHex, nonceHex, counter), [counter, keyHex, nonceHex]);
   const plainHex = textBlocks(plain, 64)[0];
   const cipher = xorHex(plainHex, block.keystream.slice(0, plainHex.length));
   const activeState = block.snapshots[Math.min(2, block.snapshots.length - 1)].state.map((word) => word.toString(16).padStart(8, "0"));
@@ -21,8 +24,8 @@ export default function ChaCha20Page() {
       <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
         <Card title="Key, nonce, counter, plaintext">
           <div className="grid gap-3">
-            <Field label="256-bit key hex"><input className="field font-mono" value={key} onChange={(event) => setKey(event.target.value)} /></Field>
-            <Field label="96-bit nonce hex"><input className="field font-mono" value={nonce} onChange={(event) => setNonce(event.target.value)} /></Field>
+            <Field label="256-bit key ASCII" value={key} expectedBytes={32} hint="Converted internally to the 32-byte ChaCha20 key."><input className="field font-mono" value={key} onChange={(event) => setKey(event.target.value)} /></Field>
+            <Field label="96-bit nonce ASCII" value={nonce} expectedBytes={12} hint="Converted internally to the 12-byte ChaCha20 nonce."><input className="field font-mono" value={nonce} onChange={(event) => setNonce(event.target.value)} /></Field>
             <Field label="Counter"><input className="field" type="number" value={counter} onChange={(event) => setCounter(Number(event.target.value))} /></Field>
             <Field label="Plaintext"><textarea className="field min-h-24" value={plain} onChange={(event) => setPlain(event.target.value)} /></Field>
           </div>

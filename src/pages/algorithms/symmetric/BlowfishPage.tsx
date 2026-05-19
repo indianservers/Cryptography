@@ -4,7 +4,8 @@ import { PageHeader } from "../../../components/common/PageHeader";
 import { Card, Field, ValueRow } from "../../../components/common/Field";
 import { WarningBadge } from "../../../components/common/WarningBadge";
 import { ByteGrid } from "../../../components/common/ByteGrid";
-import { bytesToHex, hexToBytes } from "../../../lib/legacyCiphers";
+import { bytesToHex } from "../../../lib/legacyCiphers";
+import { asciiToBytes } from "../../../lib/format";
 
 const paddingNames = ["PKCS5", "ONE_AND_ZEROS", "LAST_BYTE", "NULL", "SPACES"] as const;
 type PaddingName = typeof paddingNames[number];
@@ -18,11 +19,11 @@ export default function BlowfishPage() {
   const [key, setKey] = useState("correct horse battery");
   const [mode, setMode] = useState<"ECB" | "CBC">("CBC");
   const [padding, setPadding] = useState<PaddingName>("PKCS5");
-  const [iv, setIv] = useState("1234567890abcdef");
+  const [iv, setIv] = useState("bfish iv");
   const result = useMemo(() => {
     try {
       const cipher = new Blowfish(key, Blowfish.MODE[mode], paddingValue(padding));
-      if (mode === "CBC") cipher.setIv(hexToBytes(iv).slice(0, 8));
+      if (mode === "CBC") cipher.setIv(asciiToBytes(iv, 8));
       const encrypted = cipher.encode(plain);
       const decrypted = cipher.decode(encrypted, Blowfish.TYPE.STRING);
       return { ok: true as const, encrypted, encryptedHex: bytesToHex(encrypted), decrypted };
@@ -40,12 +41,12 @@ export default function BlowfishPage() {
         <Card title="Blowfish inputs">
           <div className="grid gap-4">
             <Field label="Plaintext"><textarea className="field min-h-24" value={plain} onChange={(event) => setPlain(event.target.value)} /></Field>
-            <Field label="Variable-length key"><input className="field" value={key} onChange={(event) => setKey(event.target.value)} /></Field>
+            <Field label="Variable-length key" value={key} hint="ASCII key text passed to the bundled Blowfish library."><input className="field" value={key} onChange={(event) => setKey(event.target.value)} /></Field>
             <div className="grid gap-3 md:grid-cols-2">
               <Field label="Mode"><select className="field" value={mode} onChange={(event) => setMode(event.target.value as "ECB" | "CBC")}><option>ECB</option><option>CBC</option></select></Field>
               <Field label="Padding"><select className="field" value={padding} onChange={(event) => setPadding(event.target.value as PaddingName)}>{paddingNames.map((name) => <option key={name}>{name}</option>)}</select></Field>
             </div>
-            <Field label="CBC IV hex, first 8 bytes used"><input className="field font-mono" value={iv} onChange={(event) => setIv(event.target.value)} /></Field>
+            <Field label="CBC IV ASCII, first 8 bytes used" value={iv} expectedBytes={8} hint="Converted internally to the 8-byte CBC IV."><input className="field font-mono" value={iv} onChange={(event) => setIv(event.target.value)} /></Field>
           </div>
         </Card>
         <Card title="Real Blowfish output">

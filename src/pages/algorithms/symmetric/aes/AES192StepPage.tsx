@@ -4,13 +4,16 @@ import { InputPanel } from "../../../../components/common/InputPanel";
 import { MatrixView } from "../../../../components/common/MatrixView";
 import { StepControls } from "../../../../components/common/StepControls";
 import { WarningBadge } from "../../../../components/common/WarningBadge";
-import { buildAesSteps, changedIndexes, cleanHex, hexByte, hexWord } from "./aesEducationalCore";
+import { asciiToHex } from "../../../../lib/format";
+import { buildAesSteps, changedIndexes, hexByte, hexWord } from "./aesEducationalCore";
 
 export default function AES192StepPage() {
-  const [plain, setPlain] = useState("00112233445566778899aabbccddeeff");
-  const [key, setKey] = useState("000102030405060708090a0b0c0d0e0f1011121314151617");
+  const [plain, setPlain] = useState("AES-192 input!!");
+  const [key, setKey] = useState("AES-192 key material!!!!");
   const [stepIndex, setStepIndex] = useState(0);
-  const aes = useMemo(() => buildAesSteps(plain, key, 192), [plain, key]);
+  const plainBytes = new TextEncoder().encode(plain).length;
+  const keyBytes = new TextEncoder().encode(key).length;
+  const aes = useMemo(() => buildAesSteps(asciiToHex(plain, 16), asciiToHex(key, 24), 192), [plain, key]);
   const step = aes.steps[Math.min(stepIndex, aes.steps.length - 1)];
   const changed = changedIndexes(step.previousState, step.state);
 
@@ -19,8 +22,8 @@ export default function AES192StepPage() {
       <PageHeader title="AES-192 Step Visualizer" category="Block Ciphers" status="Educational">Trace real AES-192 over one 16-byte block. AES-192 uses Nk=6 key words, 12 rounds, and 13 round keys.</PageHeader>
       <InputPanel title="AES-192 inputs">
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="label">Plaintext block hex<input className="field mt-1 font-mono" value={plain} onChange={(event) => { setPlain(cleanHex(event.target.value, 16)); setStepIndex(0); }} /></label>
-          <label className="label">192-bit key hex<input className={`field mt-1 font-mono ${cleanHex(key, 24).length === 48 ? "bg-emerald-50" : "bg-rose-50"}`} value={key} onChange={(event) => { setKey(event.target.value); setStepIndex(0); }} /></label>
+          <label className="label"><span className="flex flex-wrap items-center justify-between gap-2">Plaintext block ASCII<span className={`rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold ${plainBytes === 16 ? "text-emerald-700" : "text-amber-700"}`}>{plainBytes}/16 bytes</span></span><input className="field mt-1 font-mono" value={plain} onChange={(event) => { setPlain(event.target.value); setStepIndex(0); }} /></label>
+          <label className="label"><span className="flex flex-wrap items-center justify-between gap-2">192-bit key ASCII<span className={`rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold ${keyBytes === 24 ? "text-emerald-700" : "text-amber-700"}`}>{keyBytes}/24 bytes</span></span><input className={`field mt-1 font-mono ${keyBytes === 24 ? "bg-emerald-50" : "bg-rose-50"}`} value={key} onChange={(event) => { setKey(event.target.value); setStepIndex(0); }} /></label>
         </div>
       </InputPanel>
       <StepControls step={Math.min(stepIndex, aes.steps.length - 1)} max={aes.steps.length - 1} onStep={setStepIndex} />

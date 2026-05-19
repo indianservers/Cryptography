@@ -3,11 +3,12 @@ import { PageHeader } from "../../../../components/common/PageHeader";
 import { InputPanel } from "../../../../components/common/InputPanel";
 import { MatrixView } from "../../../../components/common/MatrixView";
 import { WarningBadge } from "../../../../components/common/WarningBadge";
-import { buildAes128Steps, changedIndexes, cleanHex, hexByte, hexWord } from "./aesEducationalCore";
+import { asciiToHex } from "../../../../lib/format";
+import { buildAes128Steps, changedIndexes, hexByte, hexWord } from "./aesEducationalCore";
 import { aesSBox } from "./aesTables";
 
-const samplePlaintext = "00112233445566778899aabbccddeeff";
-const sampleKey = "000102030405060708090a0b0c0d0e0f";
+const samplePlaintext = "AES-128 input!!";
+const sampleKey = "AES-128 key demo";
 
 function matrixValues(bytes: number[]) {
   return bytes.map(hexByte);
@@ -24,8 +25,10 @@ export default function AES128StepPage() {
   const [selectedByte, setSelectedByte] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(900);
+  const plaintextBytes = new TextEncoder().encode(plaintext).length;
+  const keyBytes = new TextEncoder().encode(key).length;
 
-  const aes = useMemo(() => buildAes128Steps(plaintext, key), [key, plaintext]);
+  const aes = useMemo(() => buildAes128Steps(asciiToHex(plaintext, 16), asciiToHex(key, 16)), [key, plaintext]);
   const step = aes.steps[Math.min(stepIndex, aes.steps.length - 1)];
   const activeStepIndex = Math.min(stepIndex, aes.steps.length - 1);
   const roundKeys = useMemo(() => groupRoundKeys(aes.roundKeys), [aes.roundKeys]);
@@ -48,8 +51,8 @@ export default function AES128StepPage() {
     return () => window.clearInterval(timer);
   }, [aes.steps.length, playing, speed]);
 
-  const setCleanPlaintext = (value: string) => setPlaintext(cleanHex(value, 16));
-  const setCleanKey = (value: string) => setKey(cleanHex(value, 16));
+  const setAsciiPlaintext = (value: string) => setPlaintext(value);
+  const setAsciiKey = (value: string) => setKey(value);
 
   return (
     <div className="space-y-6">
@@ -60,8 +63,8 @@ export default function AES128StepPage() {
       <InputPanel title="AES-128 block, key, and playback controls">
         <div className="grid gap-4">
           <div className="grid gap-3 xl:grid-cols-2">
-            <label className="label">Plaintext block hex, 16 bytes<input className="field mt-1 font-mono" value={plaintext} onChange={(event) => setCleanPlaintext(event.target.value)} /></label>
-            <label className="label">Cipher key hex, 16 bytes<input className="field mt-1 font-mono" value={key} onChange={(event) => setCleanKey(event.target.value)} /></label>
+            <label className="label"><span className="flex flex-wrap items-center justify-between gap-2">Plaintext block ASCII<span className={`rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold ${plaintextBytes === 16 ? "text-emerald-700" : "text-amber-700"}`}>{plaintextBytes}/16 bytes</span></span><input className="field mt-1 font-mono" value={plaintext} onChange={(event) => setAsciiPlaintext(event.target.value)} /></label>
+            <label className="label"><span className="flex flex-wrap items-center justify-between gap-2">Cipher key ASCII<span className={`rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold ${keyBytes === 16 ? "text-emerald-700" : "text-amber-700"}`}>{keyBytes}/16 bytes</span></span><input className="field mt-1 font-mono" value={key} onChange={(event) => setAsciiKey(event.target.value)} /></label>
           </div>
           <div className="grid gap-3 xl:grid-cols-[1fr_1fr_12rem]">
             <label className="label">Step selector<select className="field mt-1" value={activeStepIndex} onChange={(event) => setStepIndex(Number(event.target.value))}>{aes.steps.map((item, index) => <option key={item.id} value={index}>{index + 1}. {item.title}</option>)}</select></label>

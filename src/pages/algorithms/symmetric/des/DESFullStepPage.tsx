@@ -4,18 +4,20 @@ import { Card, Field, ValueRow } from "../../../../components/common/Field";
 import { MatrixView } from "../../../../components/common/MatrixView";
 import { StepControls } from "../../../../components/common/StepControls";
 import { WarningBadge } from "../../../../components/common/WarningBadge";
+import { asciiToHex } from "../../../../lib/format";
 import { desSBoxOutput } from "./desEducationalCore";
 
 const rotate = (value: string, amount: number) => value.slice(amount) + value.slice(0, amount);
 
 export default function DESFullStepPage() {
-  const [block, setBlock] = useState("0123456789abcdef");
-  const [key, setKey] = useState("133457799bbcdff1");
+  const [block, setBlock] = useState("DESblock");
+  const [key, setKey] = useState("DES key!");
   const [round, setRound] = useState(0);
   const rounds = useMemo(() => {
-    let left = BigInt("0x" + block.replace(/[^0-9a-f]/gi, "").padEnd(16, "0").slice(0, 16)).toString(2).padStart(64, "0").slice(0, 32);
-    let right = BigInt("0x" + block.replace(/[^0-9a-f]/gi, "").padEnd(16, "0").slice(0, 16)).toString(2).padStart(64, "0").slice(32);
-    const keyBits = BigInt("0x" + key.replace(/[^0-9a-f]/gi, "").padEnd(16, "0").slice(0, 16)).toString(2).padStart(64, "0").slice(0, 56);
+    const blockHex = asciiToHex(block, 8);
+    let left = BigInt("0x" + blockHex).toString(2).padStart(64, "0").slice(0, 32);
+    let right = BigInt("0x" + blockHex).toString(2).padStart(64, "0").slice(32);
+    const keyBits = BigInt("0x" + asciiToHex(key, 8)).toString(2).padStart(64, "0").slice(0, 56);
     return Array.from({ length: 16 }, (_, index) => {
       const roundKey = rotate(keyBits, index + 1).slice(0, 48);
       const expanded = right.padEnd(48, right).slice(0, 48);
@@ -35,8 +37,8 @@ export default function DESFullStepPage() {
       <PageHeader title="DES Full Step Visualizer" category="Block Ciphers" status="Deprecated">A 16-round Feistel walkthrough showing expansion, round-key XOR, S-box compression, and L/R swapping for each DES-style round.</PageHeader>
       <Card title="Block, key, and round selector">
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="64-bit block hex"><input className="field font-mono" value={block} onChange={(event) => setBlock(event.target.value)} /></Field>
-          <Field label="64-bit key hex"><input className="field font-mono" value={key} onChange={(event) => setKey(event.target.value)} /></Field>
+          <Field label="64-bit block ASCII" value={block} expectedBytes={8} hint="Converted internally before the Feistel trace."><input className="field font-mono" value={block} onChange={(event) => setBlock(event.target.value)} /></Field>
+          <Field label="64-bit key ASCII" value={key} expectedBytes={8} hint="Converted internally before round-key derivation."><input className="field font-mono" value={key} onChange={(event) => setKey(event.target.value)} /></Field>
         </div>
         <div className="mt-4"><StepControls step={round} max={15} onStep={setRound} /></div>
       </Card>
