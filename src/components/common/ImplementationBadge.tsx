@@ -14,9 +14,9 @@ const supportStyles: Record<BrowserSupport, string> = {
 };
 
 export function ImplementationBadge({ status, compact = false }: { status: ImplementationStatus; compact?: boolean }) {
-  return <span className={`rounded-full border px-2 py-0.5 font-semibold ${compact ? "text-[10px]" : "text-xs"} ${implementationStyles[status]}`}>{status}</span>;
+  return <span title={`Implementation status: ${status}`} className={`rounded-full border px-2 py-0.5 font-semibold ${compact ? "text-[10px]" : "text-xs"} ${implementationStyles[status]}`}>{status}</span>;
 }
 
 export function BrowserSupportBadge({ support, compact = false }: { support: BrowserSupport; compact?: boolean }) {
-  return <span className={`rounded-full border px-2 py-0.5 font-semibold ${compact ? "text-[10px]" : "text-xs"} ${supportStyles[support]}`}>{support}</span>;
+  return <span title={`Browser support: ${support}`} className={`rounded-full border px-2 py-0.5 font-semibold ${compact ? "text-[10px]" : "text-xs"} ${supportStyles[support]}`}>{support}</span>;
 }

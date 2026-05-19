@@ -1,4 +1,5 @@
 import type { SecurityStatus } from "../../types";
+import { useEffect, useState } from "react";
 import { SecurityStatusBadge } from "./SecurityStatusBadge";
 import { useLocation } from "react-router-dom";
 import { findAlgorithm } from "../../data/algorithmMetadata";
@@ -20,8 +21,15 @@ const categoryTone = (category: string) => {
   return "border-sky-200 bg-sky-50 text-sky-800";
 };
 
+const tabs = ["Overview", "Interactive Demo", "Step-by-Step", "Security Notes", "Test Vectors"].map((label) => ({
+  label,
+  id: label.toLowerCase().replace(/[^a-z]+/g, "-").replace(/-$/, ""),
+}));
+
 export function PageHeader({ title, category, status, children }: { title: string; category: string; status: SecurityStatus; children: React.ReactNode }) {
   const location = useLocation();
+  const [activeSection, setActiveSection] = useState(tabs[0].id);
+  const [visibleTabs, setVisibleTabs] = useState(tabs.slice(0, 1));
   const algorithm = findAlgorithm(location.pathname);
   const route = algorithm?.route ?? location.pathname;
   const safeMessage = status === "Modern"
@@ -31,6 +39,23 @@ export function PageHeader({ title, category, status, children }: { title: strin
       : status === "Deprecated"
         ? "Deprecated. Keep this for study, migration, or compatibility only."
         : "Educational or unsafe if misused. Do not treat demo settings as production guidance.";
+
+  useEffect(() => {
+    const existingTabs = tabs.filter((tab) => document.getElementById(tab.id));
+    setVisibleTabs(existingTabs.length ? existingTabs : tabs.slice(0, 1));
+    setActiveSection(existingTabs[0]?.id ?? tabs[0].id);
+    const sections = existingTabs.map((tab) => document.getElementById(tab.id)).filter((section): section is HTMLElement => Boolean(section));
+    if (!sections.length) return;
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible?.target.id) setActiveSection(visible.target.id);
+    }, { rootMargin: "-20% 0px -65% 0px", threshold: [0.1, 0.35, 0.6] });
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [location.pathname]);
+
   return (
     <header id="overview" className="mb-6 rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -51,12 +76,12 @@ export function PageHeader({ title, category, status, children }: { title: strin
           <div className="mt-2 flex flex-wrap gap-1.5">{(algorithm?.outputs ?? ["Computed result"]).slice(0, 5).map((output) => <span key={output} className="rounded border border-teal-100 bg-teal-50 px-2 py-1 text-xs font-medium text-teal-900 shadow-sm">{output}</span>)}</div>
         </div>
         <div className={`rounded-md border p-3 text-sm ${status === "Modern" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}>
-          <div className="text-xs font-semibold uppercase">Safe/unsafe warning</div>
+          <div className="text-xs font-semibold uppercase">{status === "Modern" ? "Security status" : "Usage guidance"}</div>
           <p className="mt-1">{safeMessage}</p>
         </div>
       </div>
       <nav className="mt-4 flex max-w-full gap-2 overflow-x-auto pb-1 text-sm">
-        {["Overview", "Interactive Demo", "Step-by-Step", "Security Notes", "Test Vectors"].map((tab) => <a key={tab} href={`#${tab.toLowerCase().replace(/[^a-z]+/g, "-").replace(/-$/, "")}`} className="shrink-0 rounded-md border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700 transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400">{tab}</a>)}
+        {visibleTabs.map((tab) => <a key={tab.id} href={`#${tab.id}`} aria-current={activeSection === tab.id ? "location" : undefined} className={`shrink-0 rounded-md border px-3 py-2 font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${activeSection === tab.id ? "border-teal-600 bg-teal-50 text-teal-900" : "border-slate-200 bg-white text-slate-700 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900"}`}>{tab.label}</a>)}
       </nav>
       <AlgorithmSpecificEnhancements title={title} category={category} status={status} />
     </header>

@@ -10,5 +10,5 @@ const styles: Record<SecurityStatus, string> = {
 
 export function SecurityStatusBadge({ status, compact = false }: { status: SecurityStatus; compact?: boolean }) {
   const label = status === "Unsafe" ? "Unsafe If Misused" : status;
-  return <span className={`shrink-0 rounded-full border font-semibold ${styles[status]} ${compact ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"}`}>{label}</span>;
+  return <span title={`Security status: ${label}`} className={`shrink-0 rounded-full border font-semibold ${styles[status]} ${compact ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"}`}>{label}</span>;
 }

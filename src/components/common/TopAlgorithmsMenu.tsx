@@ -21,7 +21,7 @@ export function TopAlgorithmsMenu() {
   const items = topRoutes.map((top) => ({ ...top, item: navigationItems.find((nav) => nav.route === top.route) })).filter((entry) => entry.item);
 
   return (
-    <section className="top-algorithms-menu mb-4 hidden overflow-hidden rounded-md border border-slate-200 bg-white p-2 shadow-sm xl:block sm:p-3">
+    <section className="top-algorithms-menu mb-4 hidden overflow-hidden rounded-md border border-slate-200 bg-white p-2 shadow-sm lg:block sm:p-3">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-sm font-bold uppercase tracking-wide text-slate-700">Top 10 Algorithms</h2>
         <span className="hidden text-xs text-slate-500 sm:inline">Curated quick access</span>

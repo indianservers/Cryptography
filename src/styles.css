@@ -101,7 +101,7 @@
 }
 
 @media print {
-  aside, nav, .btn, .icon-btn { display: none !important; }
+  aside, nav, .btn, .icon-btn, .privacy-banner, .top-algorithms-menu { display: none !important; }
   main { padding-left: 0 !important; }
   body { background: white !important; }
 }
@@ -117,5 +117,8 @@
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.001ms !important;
+  }
+  aside {
+    transition-property: none !important;
   }
 }

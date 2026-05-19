@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { findAlgorithm } from "../../data/algorithmMetadata";
+import { navigationItems } from "../../data/navigation";
 
 const labelize = (segment: string) => segment.split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
 
@@ -7,7 +8,14 @@ export function Breadcrumbs() {
   const location = useLocation();
   const current = findAlgorithm(location.pathname);
   const segments = location.pathname.split("/").filter(Boolean);
-  if (location.pathname === "/") return null;
+  if (location.pathname === "/") {
+    return (
+      <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+        <span className="font-semibold text-slate-900">Home</span>
+        <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold text-slate-500">{navigationItems.length} algorithms</span>
+      </nav>
+    );
+  }
 
   return (
     <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-600">
