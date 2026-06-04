@@ -2,7 +2,97 @@ import type { NavigationItem } from "../types";
 import { algorithmMetadata } from "./algorithmMetadata";
 import { getBrowserSupport, getImplementationStatus } from "./implementationStatus";
 
-export const navigationItems: NavigationItem[] = algorithmMetadata.map(({ label, category, icon, route, securityStatus }) => ({
+const inputOutputDemoItems: NavigationItem[] = [{
+  label: "Base64 Encode / Decode",
+  category: "Input/Output Demos",
+  icon: "Braces",
+  route: "/demos/base64",
+  securityStatus: "Educational",
+  implementationStatus: "Real",
+  browserSupport: "Custom TypeScript",
+}, {
+  label: "MD5",
+  category: "Input/Output Demos",
+  icon: "Hash",
+  route: "/demos/md5",
+  securityStatus: "Unsafe",
+  implementationStatus: "Real",
+  browserSupport: "Custom TypeScript",
+}, {
+  label: "SHA-1",
+  category: "Input/Output Demos",
+  icon: "Hash",
+  route: "/demos/sha1",
+  securityStatus: "Deprecated",
+  implementationStatus: "Real",
+  browserSupport: "Web Crypto",
+}, {
+  label: "SHA-256",
+  category: "Input/Output Demos",
+  icon: "Hash",
+  route: "/demos/sha256",
+  securityStatus: "Modern",
+  implementationStatus: "Real",
+  browserSupport: "Web Crypto",
+}, {
+  label: "SHA-512",
+  category: "Input/Output Demos",
+  icon: "Hash",
+  route: "/demos/sha512",
+  securityStatus: "Modern",
+  implementationStatus: "Real",
+  browserSupport: "Web Crypto",
+}, {
+  label: "HMAC-SHA256",
+  category: "Input/Output Demos",
+  icon: "FileKey",
+  route: "/demos/hmac-sha256",
+  securityStatus: "Modern",
+  implementationStatus: "Real",
+  browserSupport: "Web Crypto",
+}, {
+  label: "PBKDF2-SHA256",
+  category: "Input/Output Demos",
+  icon: "Database",
+  route: "/demos/pbkdf2",
+  securityStatus: "Modern",
+  implementationStatus: "Real",
+  browserSupport: "Web Crypto",
+}, {
+  label: "AES Encrypt / Decrypt",
+  category: "Input/Output Demos",
+  icon: "LockKeyhole",
+  route: "/demos/aes",
+  securityStatus: "Modern",
+  implementationStatus: "Real",
+  browserSupport: "Web Crypto",
+}, {
+  label: "DES Encrypt / Decrypt",
+  category: "Input/Output Demos",
+  icon: "Box",
+  route: "/demos/des",
+  securityStatus: "Deprecated",
+  implementationStatus: "Real",
+  browserSupport: "Custom TypeScript",
+}, {
+  label: "Caesar Encrypt / Decrypt",
+  category: "Input/Output Demos",
+  icon: "BookOpen",
+  route: "/demos/caesar",
+  securityStatus: "Unsafe",
+  implementationStatus: "Real",
+  browserSupport: "Custom TypeScript",
+}, {
+  label: "Vigenere Encrypt / Decrypt",
+  category: "Input/Output Demos",
+  icon: "BookOpen",
+  route: "/demos/vigenere",
+  securityStatus: "Educational",
+  implementationStatus: "Real",
+  browserSupport: "Custom TypeScript",
+}];
+
+export const navigationItems: NavigationItem[] = inputOutputDemoItems.concat(algorithmMetadata.map(({ label, category, icon, route, securityStatus }) => ({
   label,
   category,
   icon: icon ?? "Shield",
@@ -10,7 +100,7 @@ export const navigationItems: NavigationItem[] = algorithmMetadata.map(({ label,
   securityStatus,
   implementationStatus: getImplementationStatus(route),
   browserSupport: getBrowserSupport(route),
-})).concat([{
+}))).concat([{
   label: "AES Rounds",
   category: "Block Ciphers",
   icon: "Box",
@@ -45,6 +135,7 @@ export const navigationItems: NavigationItem[] = algorithmMetadata.map(({ label,
 }]);
 
 export const navigationCategories = [
+  "Input/Output Demos",
   "Classical Cryptography",
   "Symmetric Cryptography",
   "Block Ciphers",

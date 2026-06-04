@@ -12,6 +12,7 @@ import { TopAlgorithmsMenu } from "../components/common/TopAlgorithmsMenu";
 const icons = { Shield, BookOpen, LockKeyhole, Waves, KeyRound, Fingerprint, Hash, FileKey, Database, Network, ChartBar, Zap, Box, Layers, SquareCode, Braces, Shuffle, Gauge, Cpu };
 
 const categoryIcon: Record<string, keyof typeof icons> = {
+  "Input/Output Demos": "Cpu",
   "Classical Cryptography": "BookOpen",
   "Symmetric Cryptography": "LockKeyhole",
   "Block Ciphers": "Box",
@@ -34,6 +35,7 @@ const categoryIcon: Record<string, keyof typeof icons> = {
 };
 
 const categoryDisplay: Record<string, string> = {
+  "Input/Output Demos": "I/O Demos",
   "Classical Cryptography": "Classical",
   "Symmetric Cryptography": "Symmetric",
   "Block Ciphers": "Symmetric",
@@ -46,6 +48,7 @@ const categoryDisplay: Record<string, string> = {
 };
 
 const categoryTone: Record<string, string> = {
+  "Input/Output Demos": "border-emerald-200 bg-emerald-50 text-emerald-800",
   "Classical Cryptography": "border-sky-200 bg-sky-50 text-sky-800",
   "Symmetric Cryptography": "border-teal-200 bg-teal-50 text-teal-800",
   "Block Ciphers": "border-teal-200 bg-teal-50 text-teal-800",
