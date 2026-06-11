@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { ShieldCheck, X } from "lucide-react";
 import type { NavigationItem, SecurityStatus } from "../../types";
 import { navigationItems } from "../../data/navigation";
 import { SecurityStatusBadge } from "./SecurityStatusBadge";
@@ -11,6 +11,19 @@ const securityScore: Record<SecurityStatus, number> = {
   Educational: 2,
   Deprecated: 1,
   Unsafe: 0,
+};
+
+const implementationScore: Record<string, number> = {
+  Real: 2,
+  Educational: 1,
+  Substitute: 0,
+};
+
+const supportScore: Record<string, number> = {
+  "Web Crypto": 2,
+  "Custom TypeScript": 1.5,
+  Mixed: 1,
+  "Educational Substitute": 0,
 };
 
 const speedByCategory: Record<string, string> = {
@@ -55,6 +68,66 @@ const useCaseByCategory: Record<string, string> = {
   "Padding Schemes": "Encoding messages into block or RSA formats",
 };
 
+const failureModeByCategory: Record<string, string> = {
+  "Classical Cryptography": "Broken by frequency analysis, brute force, or known plaintext.",
+  "Symmetric Cryptography": "Weak mode, bad padding, short keys, or missing authentication.",
+  "Block Ciphers": "Incorrect modes, side channels, or obsolete block/key sizes.",
+  "Stream Ciphers": "Nonce or keystream reuse.",
+  "Public Key Cryptography": "Small parameters, missing padding, or poor randomness.",
+  "Elliptic Curve Cryptography": "Invalid curves, nonce reuse, or wrong subgroup checks.",
+  "Hash Functions": "Collisions, length extension, or using fast hashes for passwords.",
+  "MAC Algorithms": "Wrong key handling, truncation, or unauthenticated metadata.",
+  "Key Derivation Functions": "Low cost, missing salt, or weak passwords.",
+  "Modes of Operation": "Nonce/IV misuse or unauthenticated encryption.",
+  "Padding Schemes": "Padding oracle leaks or using encoding as security.",
+  "Cryptanalysis and Attacks": "Educational attack workflow; use only on authorized local samples.",
+};
+
+const parameterRuleByCategory: Record<string, string> = {
+  "Symmetric Cryptography": "Prefer 128-bit or 256-bit keys and authenticated encryption.",
+  "Block Ciphers": "Use AEAD modes where possible; avoid ECB.",
+  "Stream Ciphers": "Never reuse a nonce with the same key.",
+  "Public Key Cryptography": "Use modern padding and vetted parameter sizes.",
+  "Elliptic Curve Cryptography": "Use standard curves and deterministic or high-quality nonces.",
+  "Hash Functions": "Use SHA-256/SHA-512/SHA-3/BLAKE for modern digesting; do not use bare hashes for passwords.",
+  "MAC Algorithms": "Use strong random keys and constant-time verification.",
+  "Key Derivation Functions": "Use unique salts and cost settings calibrated for the environment.",
+  "Modes of Operation": "Prefer GCM or another AEAD mode with unique nonces.",
+  "Padding Schemes": "Validate errors uniformly; avoid distinguishable padding failures.",
+};
+
+function strengthScore(item: NavigationItem) {
+  const security = securityScore[item.securityStatus] * 14;
+  const implementation = (implementationScore[item.implementationStatus ?? "Substitute"] ?? 0) * 10;
+  const support = (supportScore[item.browserSupport ?? "Educational Substitute"] ?? 0) * 7;
+  const modernBonus = item.securityStatus === "Modern" ? 10 : item.securityStatus === "Legacy" ? -4 : item.securityStatus === "Unsafe" ? -18 : 0;
+  return Math.max(0, Math.min(100, Math.round(security + implementation + support + modernBonus)));
+}
+
+function strengthLabel(score: number) {
+  if (score >= 85) return "Strong default candidate";
+  if (score >= 65) return "Usable with context";
+  if (score >= 45) return "Learning or compatibility";
+  if (score >= 25) return "Weak or specialized";
+  return "Avoid for protection";
+}
+
+function StrengthBar({ item }: { item: NavigationItem }) {
+  const score = strengthScore(item);
+  const tone = score >= 80 ? "bg-emerald-600" : score >= 60 ? "bg-teal-600" : score >= 40 ? "bg-amber-500" : "bg-red-600";
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between gap-2 text-xs font-semibold text-slate-600">
+        <span>{strengthLabel(score)}</span>
+        <span className="font-mono">{score}/100</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+        <div className={`h-full rounded-full ${tone}`} style={{ width: `${score}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function metricFor(item: NavigationItem, metric: "speed" | "keySize" | "useCase") {
   if (metric === "speed") return speedByCategory[item.category] ?? "Depends on parameters and implementation";
   if (metric === "keySize") return keySizeByCategory[item.category] ?? "Depends on selected parameters";
@@ -62,9 +135,9 @@ function metricFor(item: NavigationItem, metric: "speed" | "keySize" | "useCase"
 }
 
 function recommendation(left: NavigationItem, right: NavigationItem) {
-  const delta = securityScore[left.securityStatus] - securityScore[right.securityStatus];
-  if (delta > 0) return `${left.label} has the stronger security status in this suite.`;
-  if (delta < 0) return `${right.label} has the stronger security status in this suite.`;
+  const delta = strengthScore(left) - strengthScore(right);
+  if (delta >= 10) return `${left.label} is the stronger choice by this suite's strength model.`;
+  if (delta <= -10) return `${right.label} is the stronger choice by this suite's strength model.`;
   if (left.browserSupport === "Web Crypto" && right.browserSupport !== "Web Crypto") return `${left.label} has better native browser support.`;
   if (right.browserSupport === "Web Crypto" && left.browserSupport !== "Web Crypto") return `${right.label} has better native browser support.`;
   return "Both options need protocol context; compare the use case and parameter rules.";
@@ -95,7 +168,7 @@ export function AlgorithmComparisonMode({ open, onClose }: { open: boolean; onCl
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4">
           <div>
             <h2 className="text-lg font-bold">Comparison Mode</h2>
-            <p className="text-sm text-slate-600">Compare two algorithms by security, speed, key size, browser support, and use case.</p>
+            <p className="text-sm text-slate-600">Compare two algorithms by strength, risk, parameters, speed, support, and use case.</p>
           </div>
           <button className="icon-btn" onClick={onClose} title="Close comparison"><X /></button>
         </div>
@@ -110,9 +183,21 @@ export function AlgorithmComparisonMode({ open, onClose }: { open: boolean; onCl
             <CompareCell item={left} />
             <CompareCell item={right} />
 
+            <div className="font-semibold text-slate-700">Strength</div>
+            <div className="rounded-md border border-slate-200 p-3"><StrengthBar item={left} /></div>
+            <div className="rounded-md border border-slate-200 p-3"><StrengthBar item={right} /></div>
+
             <div className="font-semibold text-slate-700">Security</div>
             <div className="rounded-md border border-slate-200 p-3"><SecurityStatusBadge status={left.securityStatus} /></div>
             <div className="rounded-md border border-slate-200 p-3"><SecurityStatusBadge status={right.securityStatus} /></div>
+
+            <div className="font-semibold text-slate-700">Failure Mode</div>
+            <div className="rounded-md border border-slate-200 p-3 text-sm">{failureModeByCategory[left.category] ?? "Depends on protocol, implementation, and parameters."}</div>
+            <div className="rounded-md border border-slate-200 p-3 text-sm">{failureModeByCategory[right.category] ?? "Depends on protocol, implementation, and parameters."}</div>
+
+            <div className="font-semibold text-slate-700">Parameter Rule</div>
+            <div className="rounded-md border border-slate-200 p-3 text-sm">{parameterRuleByCategory[left.category] ?? "Use vetted parameters and understand the surrounding protocol."}</div>
+            <div className="rounded-md border border-slate-200 p-3 text-sm">{parameterRuleByCategory[right.category] ?? "Use vetted parameters and understand the surrounding protocol."}</div>
 
             <div className="font-semibold text-slate-700">Speed</div>
             <div className="rounded-md border border-slate-200 p-3 text-sm">{metricFor(left, "speed")}</div>
@@ -132,7 +217,7 @@ export function AlgorithmComparisonMode({ open, onClose }: { open: boolean; onCl
           </div>
 
           <div className="mt-4 rounded-md border border-cyan-200 bg-cyan-50 p-4 text-sm font-semibold text-cyan-900">
-            {recommendation(left, right)}
+            <div className="flex gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" /><span>{recommendation(left, right)}</span></div>
           </div>
         </div>
       </section>

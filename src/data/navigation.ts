@@ -136,6 +136,7 @@ export const navigationItems: NavigationItem[] = inputOutputDemoItems.concat(alg
 
 export const navigationCategories = [
   "Input/Output Demos",
+  "Applied Mathematics",
   "Classical Cryptography",
   "Symmetric Cryptography",
   "Block Ciphers",
@@ -155,4 +156,63 @@ export const navigationCategories = [
   "Benchmark and Comparison",
   "Saved Experiments",
   "Export Center",
+];
+
+export const navigationSections = [
+  {
+    label: "Foundations",
+    categories: [
+      "Input/Output Demos",
+      "Applied Mathematics",
+      "Classical Cryptography",
+    ],
+  },
+  {
+    label: "Symmetric Cryptography",
+    categories: [
+      "Symmetric Cryptography",
+      "Block Ciphers",
+      "Stream Ciphers",
+      "Modes of Operation",
+      "Padding Schemes",
+    ],
+  },
+  {
+    label: "Public-Key Cryptography",
+    categories: [
+      "Public Key Cryptography",
+      "Elliptic Curve Cryptography",
+    ],
+  },
+  {
+    label: "Integrity and Passwords",
+    categories: [
+      "Hash Functions",
+      "MAC Algorithms",
+      "Key Derivation Functions",
+    ],
+  },
+  {
+    label: "Formats and Trust",
+    categories: [
+      "Encoding Tools",
+      "Certificates and PKI",
+      "Blockchain Cryptography",
+    ],
+  },
+  {
+    label: "Cryptanalysis",
+    categories: [
+      "Cryptanalysis and Attacks",
+    ],
+  },
+  {
+    label: "Labs and Utilities",
+    categories: [
+      "Randomness and Entropy",
+      "Benchmark and Comparison",
+      "Saved Experiments",
+      "Export Center",
+    ],
+  },
 ];

@@ -15,6 +15,15 @@ const webCryptoRoutes = new Set([
 ]);
 
 const customRoutes = new Set([
+  "/algorithms/math/primes",
+  "/algorithms/math/modular-arithmetic",
+  "/algorithms/math/euclidean-algorithm",
+  "/algorithms/math/finite-fields",
+  "/algorithms/math/chinese-remainder",
+  "/algorithms/math/discrete-logarithm",
+  "/algorithms/math/primitive-roots",
+  "/algorithms/math/gf256",
+  "/algorithms/math/elliptic-curve-points",
   "/algorithms/classical/caesar-cipher",
   "/algorithms/classical/rot13",
   "/algorithms/classical/atbash",
@@ -55,6 +64,14 @@ const customRoutes = new Set([
   "/algorithms/encoding/base64",
   "/algorithms/encoding/hex",
   "/algorithms/encoding/binary",
+  "/algorithms/attacks/frequency-analysis",
+  "/algorithms/attacks/caesar-brute-force",
+  "/algorithms/attacks/ecb-pattern-leakage",
+  "/algorithms/attacks/rsa-small-exponent",
+  "/algorithms/attacks/rsa-factorization-demo",
+  "/algorithms/attacks/hash-collision-demo",
+  "/algorithms/attacks/nonce-reuse",
+  "/algorithms/attacks/xor-known-plaintext",
   "/algorithms/tools/entropy-analyzer",
   "/algorithms/symmetric/aes-test-vectors",
   "/algorithms/hash/md5",
@@ -71,14 +88,19 @@ const customRoutes = new Set([
   "/algorithms/blockchain/wallet-key-pair",
 ]);
 
+const mixedRoutes = new Set([
+  "/algorithms/attacks/reserve-hash",
+]);
+
 export function getImplementationStatus(route: string): ImplementationStatus {
-  if (webCryptoRoutes.has(route) || customRoutes.has(route)) return "Real";
+  if (webCryptoRoutes.has(route) || customRoutes.has(route) || mixedRoutes.has(route)) return "Real";
   return "Substitute";
 }
 
 export function getBrowserSupport(route: string): BrowserSupport {
   if (webCryptoRoutes.has(route)) return "Web Crypto";
   if (customRoutes.has(route)) return "Custom TypeScript";
+  if (mixedRoutes.has(route)) return "Mixed";
   return "Educational Substitute";
 }
 

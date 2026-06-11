@@ -9,6 +9,7 @@ import { AlgorithmSpecificEnhancements } from "./AlgorithmSpecificEnhancements";
 
 const categoryTone = (category: string) => {
   if (/symmetric|block/i.test(category)) return "border-teal-200 bg-teal-50 text-teal-800";
+  if (/mathematics|math/i.test(category)) return "border-blue-200 bg-blue-50 text-blue-800";
   if (/stream/i.test(category)) return "border-cyan-200 bg-cyan-50 text-cyan-800";
   if (/public|rsa|elgamal|rabin/i.test(category)) return "border-indigo-200 bg-indigo-50 text-indigo-800";
   if (/curve|ecc|ecd/i.test(category)) return "border-violet-200 bg-violet-50 text-violet-800";

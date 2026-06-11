@@ -2,6 +2,184 @@ import type { AlgorithmMetadata } from "../types";
 
 export const algorithmMetadata: AlgorithmMetadata[] = [
   {
+    "page": "PrimeNumbersPage",
+    "route": "/algorithms/math/primes",
+    "label": "Prime Numbers",
+    "category": "Applied Mathematics",
+    "icon": "Calculator",
+    "securityStatus": "Educational",
+    "intro": "Explore primality, factorization, Euler's phi function, and prime lists used throughout public-key cryptography.",
+    "inputs": [
+      "Integer n",
+      "Prime list limit"
+    ],
+    "outputs": [
+      "Primality result",
+      "Factorization",
+      "Euler phi(n)",
+      "Sieve primes"
+    ],
+    "visualizers": [
+      "Trial division witness",
+      "Sieve of Eratosthenes",
+      "Crypto usage notes"
+    ],
+    "notes": [
+      "Real cryptographic primes are much larger than trial-division examples."
+    ]
+  },
+  {
+    "page": "ModularMathPage",
+    "route": "/algorithms/math/modular-arithmetic",
+    "label": "Modular Mathematics",
+    "category": "Applied Mathematics",
+    "icon": "Calculator",
+    "securityStatus": "Educational",
+    "intro": "Practice reduction, modular addition, multiplication, inverses, and fast exponentiation.",
+    "inputs": [
+      "a",
+      "b",
+      "modulus m",
+      "exponent e"
+    ],
+    "outputs": [
+      "Reduced values",
+      "Modular sum",
+      "Modular product",
+      "Inverse",
+      "Power"
+    ],
+    "visualizers": [
+      "Clock arithmetic",
+      "Square-and-multiply trace",
+      "Inverse check"
+    ],
+    "notes": [
+      "Modulo arithmetic is the basic language of RSA, Diffie-Hellman, DSA, ECC, and affine ciphers."
+    ]
+  },
+  {
+    "page": "EuclideanAlgorithmPage",
+    "route": "/algorithms/math/euclidean-algorithm",
+    "label": "Euclidean Algorithm",
+    "category": "Applied Mathematics",
+    "icon": "Calculator",
+    "securityStatus": "Educational",
+    "intro": "Compute gcd values, Bezout coefficients, and modular inverses with the extended Euclidean algorithm.",
+    "inputs": [
+      "a",
+      "b / modulus"
+    ],
+    "outputs": [
+      "gcd(a, b)",
+      "Bezout identity",
+      "Modular inverse"
+    ],
+    "visualizers": [
+      "Euclidean division table",
+      "Extended coefficient table",
+      "Coprime status"
+    ],
+    "notes": [
+      "The extended Euclidean algorithm is used to derive RSA private exponents and many modular inverses."
+    ]
+  },
+  {
+    "page": "FiniteFieldsPage",
+    "route": "/algorithms/math/finite-fields",
+    "label": "Finite Fields GF(p)",
+    "category": "Applied Mathematics",
+    "icon": "Grid3X3",
+    "securityStatus": "Educational",
+    "intro": "Perform arithmetic in prime fields where nonzero elements have inverses.",
+    "inputs": [
+      "prime p",
+      "a",
+      "b",
+      "exponent e"
+    ],
+    "outputs": [
+      "Field addition",
+      "Field multiplication",
+      "Field inverse",
+      "Field division",
+      "Field power"
+    ],
+    "visualizers": [
+      "Addition table",
+      "Multiplication table",
+      "Prime-field status"
+    ],
+    "notes": [
+      "Prime fields underpin many Diffie-Hellman, DSA, Schnorr, and elliptic curve constructions."
+    ]
+  },
+  {
+    "page": "ChineseRemainderPage",
+    "route": "/algorithms/math/chinese-remainder",
+    "label": "Chinese Remainder Theorem",
+    "category": "Applied Mathematics",
+    "icon": "Calculator",
+    "securityStatus": "Educational",
+    "intro": "Combine congruences into one solution modulo the product of coprime moduli.",
+    "inputs": ["Congruence rows"],
+    "outputs": ["CRT solution", "Combined modulus", "Construction terms"],
+    "visualizers": ["CRT construction table", "Pairwise coprime status", "Term sum"],
+    "notes": ["CRT is used to accelerate RSA private-key operations."]
+  },
+  {
+    "page": "DiscreteLogPage",
+    "route": "/algorithms/math/discrete-logarithm",
+    "label": "Discrete Logarithm",
+    "category": "Applied Mathematics",
+    "icon": "Calculator",
+    "securityStatus": "Educational",
+    "intro": "Brute force tiny discrete logs to see why real groups must be large.",
+    "inputs": ["Base g", "Target h", "Modulus p"],
+    "outputs": ["Exponent x", "Power table"],
+    "visualizers": ["Brute force trace", "Match row", "Hardness note"],
+    "notes": ["Diffie-Hellman and DSA rely on discrete logs being infeasible at real sizes."]
+  },
+  {
+    "page": "PrimitiveRootsPage",
+    "route": "/algorithms/math/primitive-roots",
+    "label": "Primitive Roots and Generators",
+    "category": "Applied Mathematics",
+    "icon": "Calculator",
+    "securityStatus": "Educational",
+    "intro": "Inspect multiplicative orders and find generators modulo n.",
+    "inputs": ["Modulus n"],
+    "outputs": ["Orders", "Primitive roots"],
+    "visualizers": ["Order table", "Generator highlighter", "Phi comparison"],
+    "notes": ["Generators define cyclic groups used in finite-field protocols."]
+  },
+  {
+    "page": "GF256ArithmeticPage",
+    "route": "/algorithms/math/gf256",
+    "label": "GF(2^8) Arithmetic",
+    "category": "Applied Mathematics",
+    "icon": "Grid3X3",
+    "securityStatus": "Educational",
+    "intro": "Multiply bytes in the AES finite field with polynomial reduction.",
+    "inputs": ["Byte a", "Byte b", "Polynomial"],
+    "outputs": ["XOR result", "Field product", "Reduction trace"],
+    "visualizers": ["Shift/XOR trace", "AES polynomial", "Byte result"],
+    "notes": ["GF(2^8) arithmetic appears in AES MixColumns and S-box construction."]
+  },
+  {
+    "page": "EllipticCurvePointMathPage",
+    "route": "/algorithms/math/elliptic-curve-points",
+    "label": "Elliptic Curve Point Arithmetic",
+    "category": "Applied Mathematics",
+    "icon": "Fingerprint",
+    "securityStatus": "Educational",
+    "intro": "Add, double, and scalar-multiply points on a small elliptic curve.",
+    "inputs": ["Curve parameters", "Point P", "Point Q", "Scalar k"],
+    "outputs": ["P + Q", "2P", "kP"],
+    "visualizers": ["Slope calculation", "Double-and-add trace", "On-curve checks"],
+    "notes": ["ECC public keys and signatures are built from scalar multiplication."]
+  },
+  {
     "page": "CaesarCipherPage",
     "route": "/algorithms/classical/caesar-cipher",
     "label": "Caesar Cipher",
@@ -2423,6 +2601,35 @@ export const algorithmMetadata: AlgorithmMetadata[] = [
     ]
   },
   {
+    "page": "ReverseHashLabPage",
+    "route": "/algorithms/attacks/reserve-hash",
+    "label": "Reverse Hash Lab",
+    "category": "Cryptanalysis and Attacks",
+    "securityStatus": "Educational",
+    "intro": "Run local hash recovery demos with wordlists, bounded brute force, salted hashes, HMAC, PBKDF2, and progress estimates.",
+    "inputs": [
+      "Target hash",
+      "Hash algorithm",
+      "Wordlist",
+      "Brute force settings",
+      "Salt or key"
+    ],
+    "outputs": [
+      "Recovered candidate",
+      "Progress",
+      "Approximate ETA",
+      "Search status"
+    ],
+    "visualizers": [
+      "Progress bar",
+      "Keyspace estimate",
+      "Hash type catalog"
+    ],
+    "notes": [
+      "Use only for local learning or hashes you are authorized to test."
+    ]
+  },
+  {
     "page": "NonceReuseAttackPage",
     "route": "/algorithms/attacks/nonce-reuse",
     "label": "Nonce Reuse Attack Demo",
@@ -2444,6 +2651,31 @@ export const algorithmMetadata: AlgorithmMetadata[] = [
     ],
     "notes": [
       "Never reuse stream-cipher nonces with the same key."
+    ]
+  },
+  {
+    "page": "XorKnownPlaintextPage",
+    "route": "/algorithms/attacks/xor-known-plaintext",
+    "label": "XOR Known-Plaintext Attack",
+    "category": "Cryptanalysis and Attacks",
+    "securityStatus": "Educational",
+    "intro": "Recover a reused XOR keystream prefix from a known plaintext/ciphertext pair and apply it to another ciphertext.",
+    "inputs": [
+      "Known ciphertext hex",
+      "Known plaintext prefix",
+      "Target ciphertext hex"
+    ],
+    "outputs": [
+      "Recovered keystream prefix",
+      "Target plaintext prefix"
+    ],
+    "visualizers": [
+      "XOR recovery equation",
+      "Known plaintext comparison",
+      "Target recovery panel"
+    ],
+    "notes": [
+      "Known protocol text or file headers can expose reused stream cipher keystream bytes."
     ]
   },
   {

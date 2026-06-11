@@ -1,7 +1,7 @@
 import { Component, Suspense, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { ArrowUp, BookOpen, Box, Braces, ChartBar, ChevronDown, Cpu, Database, FileKey, Fingerprint, Gauge, Hash, KeyRound, Layers, LockKeyhole, Menu, Network, Search, Shield, Shuffle, SquareCode, Waves, X, Zap } from "lucide-react";
-import { navigationCategories, navigationItems } from "../data/navigation";
+import { ArrowUp, BookOpen, Box, Braces, Calculator, ChartBar, ChevronDown, Cpu, Database, FileKey, Fingerprint, Gauge, Hash, KeyRound, Layers, LockKeyhole, Menu, Network, Search, Shield, Shuffle, SquareCode, Waves, X, Zap } from "lucide-react";
+import { navigationCategories, navigationItems, navigationSections } from "../data/navigation";
 import { SecurityStatusBadge } from "../components/common/SecurityStatusBadge";
 import { ImplementationBadge } from "../components/common/ImplementationBadge";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
@@ -9,10 +9,11 @@ import { PrivacyBanner } from "../components/common/PrivacyBanner";
 import { PageChrome } from "../components/common/PageChrome";
 import { TopAlgorithmsMenu } from "../components/common/TopAlgorithmsMenu";
 
-const icons = { Shield, BookOpen, LockKeyhole, Waves, KeyRound, Fingerprint, Hash, FileKey, Database, Network, ChartBar, Zap, Box, Layers, SquareCode, Braces, Shuffle, Gauge, Cpu };
+const icons = { Shield, BookOpen, LockKeyhole, Waves, KeyRound, Fingerprint, Hash, FileKey, Database, Network, ChartBar, Zap, Box, Layers, SquareCode, Braces, Shuffle, Gauge, Cpu, Calculator };
 
 const categoryIcon: Record<string, keyof typeof icons> = {
   "Input/Output Demos": "Cpu",
+  "Applied Mathematics": "Calculator",
   "Classical Cryptography": "BookOpen",
   "Symmetric Cryptography": "LockKeyhole",
   "Block Ciphers": "Box",
@@ -36,6 +37,7 @@ const categoryIcon: Record<string, keyof typeof icons> = {
 
 const categoryDisplay: Record<string, string> = {
   "Input/Output Demos": "I/O Demos",
+  "Applied Mathematics": "Math",
   "Classical Cryptography": "Classical",
   "Symmetric Cryptography": "Symmetric",
   "Block Ciphers": "Symmetric",
@@ -49,6 +51,7 @@ const categoryDisplay: Record<string, string> = {
 
 const categoryTone: Record<string, string> = {
   "Input/Output Demos": "border-emerald-200 bg-emerald-50 text-emerald-800",
+  "Applied Mathematics": "border-blue-200 bg-blue-50 text-blue-800",
   "Classical Cryptography": "border-sky-200 bg-sky-50 text-sky-800",
   "Symmetric Cryptography": "border-teal-200 bg-teal-50 text-teal-800",
   "Block Ciphers": "border-teal-200 bg-teal-50 text-teal-800",
@@ -151,6 +154,11 @@ export default function RootLayout() {
       }),
     })).filter((group) => group.items.length > 0);
   }, [query]);
+  const groupedByCategory = useMemo(() => new Map(grouped.map((group) => [group.category, group])), [grouped]);
+  const sectionedGroups = useMemo(() => navigationSections.map((section) => ({
+    label: section.label,
+    groups: section.categories.map((category) => groupedByCategory.get(category)).filter((group): group is { category: string; items: typeof navigationItems } => Boolean(group)),
+  })).filter((section) => section.groups.length > 0), [groupedByCategory]);
 
   useEffect(() => {
     const syncRecentRoutes = () => setRecentRoutes(readRecentRoutes().slice(0, 5));
@@ -272,56 +280,64 @@ export default function RootLayout() {
               <button type="button" className="btn mt-3 min-h-9 px-3 py-1.5 text-xs" onClick={clearSearch}>Clear search</button>
             </div>
           )}
-          {grouped.map(({ category, items }) => {
-            const Icon = icons[categoryIcon[category] ?? "Shield"];
-            const hasActive = items.some((item) => location.pathname === item.route);
-            const isOpen = openCategories.has(category) || hasActive || Boolean(query);
-            const tone = categoryTone[category] ?? "border-slate-200 bg-slate-50 text-slate-800";
-            const categoryCount = navigationItems.filter((item) => item.category === category).length;
-            return (
-              <section key={category} className={`mb-2 ${isOpen ? "border-b border-slate-100 pb-2" : ""}`}>
-                <button
-                  className={`flex min-h-11 w-full items-center gap-2 rounded-md border px-2 py-2 text-left text-sm font-semibold transition ${hasActive ? tone : "border-transparent text-slate-700 hover:border-slate-200 hover:bg-slate-50"}`}
-                  onClick={() => setOpenCategories((current) => {
-                    const next = new Set(current);
-                    next.has(category) ? next.delete(category) : next.add(category);
-                    return next;
-                  })}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate">{categoryDisplay[category] ?? category}</span>
-                    {categoryDisplay[category] && <span className="block truncate text-[10px] font-medium text-slate-500">{category}</span>}
-                  </span>
-                  <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">{query ? items.length : categoryCount}</span>
-                  <ChevronDown className={`h-4 w-4 transition ${isOpen ? "" : "-rotate-90"}`} />
-                </button>
-                <div className={`grid transition-[grid-template-rows] duration-150 ease-out ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
-                  <div className="min-h-0 overflow-hidden">
-                    <div className="mt-1 space-y-1 pl-3">
-                    {items.map((item) => (
-                      <NavLink
-                        key={item.route}
-                        to={item.route}
-                        onClick={closeMobileMenu}
-                        ref={(node) => {
-                          if (location.pathname === item.route) activeItemRef.current = node;
-                        }}
-                        className={({ isActive }) => `flex min-h-10 items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm transition ${isActive ? "border-teal-700 bg-teal-700 text-white shadow-sm" : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"}`}
-                      >
-                        <span className="truncate">{highlightMatch(item.label, query)}</span>
-                        <span className="flex shrink-0 items-center gap-1">
-                          <ImplementationBadge status={item.implementationStatus ?? "Substitute"} compact />
-                          <SecurityStatusBadge status={item.securityStatus} compact />
-                        </span>
-                      </NavLink>
-                    ))}
+          {sectionedGroups.map((section) => (
+            <div key={section.label} className="mb-4">
+              <div className="mb-2 flex items-center justify-between gap-2 px-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <span>{section.label}</span>
+                <span className="rounded-full bg-slate-100 px-1.5 py-0.5">{section.groups.reduce((sum, group) => sum + group.items.length, 0)}</span>
+              </div>
+              {section.groups.map(({ category, items }) => {
+                const Icon = icons[categoryIcon[category] ?? "Shield"];
+                const hasActive = items.some((item) => location.pathname === item.route);
+                const isOpen = openCategories.has(category) || hasActive || Boolean(query);
+                const tone = categoryTone[category] ?? "border-slate-200 bg-slate-50 text-slate-800";
+                const categoryCount = navigationItems.filter((item) => item.category === category).length;
+                return (
+                  <section key={category} className={`mb-2 ${isOpen ? "border-b border-slate-100 pb-2" : ""}`}>
+                    <button
+                      className={`flex min-h-11 w-full items-center gap-2 rounded-md border px-2 py-2 text-left text-sm font-semibold transition ${hasActive ? tone : "border-transparent text-slate-700 hover:border-slate-200 hover:bg-slate-50"}`}
+                      onClick={() => setOpenCategories((current) => {
+                        const next = new Set(current);
+                        next.has(category) ? next.delete(category) : next.add(category);
+                        return next;
+                      })}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{categoryDisplay[category] ?? category}</span>
+                        {categoryDisplay[category] && <span className="block truncate text-[10px] font-medium text-slate-500">{category}</span>}
+                      </span>
+                      <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">{query ? items.length : categoryCount}</span>
+                      <ChevronDown className={`h-4 w-4 transition ${isOpen ? "" : "-rotate-90"}`} />
+                    </button>
+                    <div className={`grid transition-[grid-template-rows] duration-150 ease-out ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+                      <div className="min-h-0 overflow-hidden">
+                        <div className="mt-1 space-y-1 pl-3">
+                        {items.map((item) => (
+                          <NavLink
+                            key={item.route}
+                            to={item.route}
+                            onClick={closeMobileMenu}
+                            ref={(node) => {
+                              if (location.pathname === item.route) activeItemRef.current = node;
+                            }}
+                            className={({ isActive }) => `flex min-h-10 items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm transition ${isActive ? "border-teal-700 bg-teal-700 text-white shadow-sm" : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"}`}
+                          >
+                            <span className="truncate">{highlightMatch(item.label, query)}</span>
+                            <span className="flex shrink-0 items-center gap-1">
+                              <ImplementationBadge status={item.implementationStatus ?? "Substitute"} compact />
+                              <SecurityStatusBadge status={item.securityStatus} compact />
+                            </span>
+                          </NavLink>
+                        ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </section>
-            );
-          })}
+                  </section>
+                );
+              })}
+            </div>
+          ))}
         </nav>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-white/0" />
         </div>
