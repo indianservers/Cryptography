@@ -124,6 +124,7 @@ export const router = createBrowserRouter([
       { path: "algorithms/pki/x509-certificate-viewer", lazy: lazyPage(() => import("../pages/algorithms/pki/X509CertificateViewerPage")) },
       { path: "algorithms/pki/certificate-chain", lazy: lazyPage(() => import("../pages/algorithms/pki/CertificateChainVisualizerPage")) },
       { path: "algorithms/pki/csr-viewer", lazy: lazyPage(() => import("../pages/algorithms/pki/CSRViewerPage")) },
+      { path: "algorithms/pki/digital-signatures", lazy: lazyPage(() => import("../pages/algorithms/pki/DigitalSignatureWorkbenchPage")) },
       { path: "algorithms/pki/self-signed-demo", lazy: lazyPage(() => import("../pages/algorithms/pki/SelfSignedCertificateDemoPage")) },
       { path: "algorithms/attacks/frequency-analysis", lazy: lazyPage(() => import("../pages/algorithms/attacks/FrequencyAnalysisPage")) },
       { path: "algorithms/attacks/caesar-brute-force", lazy: lazyPage(() => import("../pages/algorithms/attacks/CaesarBruteForcePage")) },

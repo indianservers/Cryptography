@@ -2393,6 +2393,35 @@ export const algorithmMetadata: AlgorithmMetadata[] = [
     ]
   },
   {
+    "page": "DigitalSignatureWorkbenchPage",
+    "route": "/algorithms/pki/digital-signatures",
+    "label": "Digital Signature Workbench",
+    "category": "Certificates and PKI",
+    "icon": "FileKey",
+    "securityStatus": "Modern",
+    "intro": "Generate a browser-local signing key, create a self-signed identity envelope, sign a message, and verify tamper detection.",
+    "inputs": [
+      "Message",
+      "Signature algorithm",
+      "Self-signed subject",
+      "Validity days"
+    ],
+    "outputs": [
+      "Signature",
+      "Public key JWK",
+      "Self-signed envelope",
+      "Verification result"
+    ],
+    "visualizers": [
+      "Signing identity fields",
+      "Tamper verification",
+      "Self-signed trust flow"
+    ],
+    "notes": [
+      "The self-signed envelope is educational and not a standards-compliant X.509 certificate."
+    ]
+  },
+  {
     "page": "SelfSignedCertificateDemoPage",
     "route": "/algorithms/pki/self-signed-demo",
     "label": "Self-Signed Certificate Demo",

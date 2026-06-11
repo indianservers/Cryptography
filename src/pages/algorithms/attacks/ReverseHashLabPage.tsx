@@ -49,7 +49,6 @@ const modes: ModeInfo[] = [
 ];
 
 const normalize = (value: string) => value.trim().replace(/^0x/i, "").toLowerCase();
-const bruteForceSafetyLimit = 250000;
 const charsets = {
   lowercase: "abcdefghijklmnopqrstuvwxyz",
   digits: "0123456789",
@@ -97,7 +96,7 @@ export default function ReverseHashLabPage() {
   const [attackMode, setAttackMode] = useState<AttackMode>("wordlist");
   const [algorithm, setAlgorithm] = useState<DemoAlgorithm>("MD5");
   const [target, setTarget] = useState(md5("hello").digest);
-  const [salt, setSalt] = useState("local-demo-salt");
+  const [salt, setSalt] = useState("");
   const [iterations, setIterations] = useState(1000);
   const [wordlist, setWordlist] = useState("password\n123456\nadmin\nhello\nletmein\ncryptography");
   const [charsetKey, setCharsetKey] = useState<keyof typeof charsets>("lowercase");
@@ -160,13 +159,7 @@ export default function ReverseHashLabPage() {
       setStatus("Add at least one character to brute force.");
       return;
     }
-    if (total > bruteForceSafetyLimit) {
-      setFound("");
-      setChecked(0);
-      setTotalWork(total);
-      setStatus(`Selected keyspace has ${total.toLocaleString()} candidates. Narrow charset or length to run in-browser.`);
-      return;
-    }
+
     setFound("");
     setChecked(0);
     setTotalWork(total);
@@ -196,6 +189,7 @@ export default function ReverseHashLabPage() {
 
   const loadSample = async () => {
     setTarget(await digest(algorithm, "hello", salt, iterations));
+    setMaxLength((prev) => Math.max(prev, 5));
     setFound("");
     setStatus(`Loaded ${algorithm} sample for "hello".`);
   };
@@ -264,7 +258,7 @@ export default function ReverseHashLabPage() {
               </Field>
               <div className="panel-muted">
                 <div className="text-xs font-semibold uppercase text-slate-500">Estimated keyspace</div>
-                <div className="mt-1 text-sm text-slate-700">{keyspaceEstimate.toLocaleString()} candidates. In-browser brute force runs when the selected keyspace is at or below {bruteForceSafetyLimit.toLocaleString()} candidates.</div>
+                <div className="mt-1 text-sm text-slate-700">{keyspaceEstimate.toLocaleString()} candidates.</div>
               </div>
             </div>
           )}

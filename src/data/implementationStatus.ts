@@ -12,6 +12,7 @@ const webCryptoRoutes = new Set([
   "/algorithms/tools/audit",
   "/algorithms/tools/test-vectors",
   "/algorithms/tools/random-bytes",
+  "/algorithms/pki/digital-signatures",
 ]);
 
 const customRoutes = new Set([
