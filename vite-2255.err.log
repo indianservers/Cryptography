@@ -22,3 +22,15 @@
     at DataRoutes (http://127.0.0.1:2255/node_modules/.vite/deps/react-router-dom.js?v=dd0d1662:4394:8)
     at Router (http://127.0.0.1:2255/node_modules/.vite/deps/react-router-dom.js?v=dd0d1662:3722:18)
     at RouterProvider (http://127.0.0.1:2255/node_modules/.vite/deps/react-router-dom.js?v=dd0d1662:4226:8)
+[2m2:46:54 pm[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2m2:52:58 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mWarning: Cannot update a component (`RootLayout`) while rendering a different component (`PageChrome`). To locate the bad setState() call inside `PageChrome`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render
+    at PageChrome (http://127.0.0.1:2255/src/components/common/PageChrome.tsx:15:19)
+    at div
+    at main
+    at div
+    at RootLayout (http://127.0.0.1:2255/src/layouts/RootLayout.tsx:178:19)
+    at RenderedRoute (http://127.0.0.1:2255/node_modules/.vite/deps/react-router-dom.js?v=dd0d1662:3331:8)
+    at RenderErrorBoundary (http://127.0.0.1:2255/node_modules/.vite/deps/react-router-dom.js?v=dd0d1662:3298:3)
+    at DataRoutes (http://127.0.0.1:2255/node_modules/.vite/deps/react-router-dom.js?v=dd0d1662:4394:8)
+    at Router (http://127.0.0.1:2255/node_modules/.vite/deps/react-router-dom.js?v=dd0d1662:3722:18)
+    at RouterProvider (http://127.0.0.1:2255/node_modules/.vite/deps/react-router-dom.js?v=dd0d1662:4226:8)

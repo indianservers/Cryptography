@@ -54,6 +54,14 @@ const charsets = {
   digits: "0123456789",
   lowercaseDigits: "abcdefghijklmnopqrstuvwxyz0123456789",
   alphaNumeric: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+  custom: "",
+};
+const charsetLabels: Record<keyof typeof charsets, string> = {
+  lowercase: "a-z",
+  digits: "0-9",
+  lowercaseDigits: "a-z, 0-9",
+  alphaNumeric: "a-z, A-Z, 0-9",
+  custom: "Custom",
 };
 
 async function digest(algorithm: DemoAlgorithm, candidate: string, salt: string, iterations: number) {
@@ -107,10 +115,11 @@ export default function ReverseHashLabPage() {
   const [found, setFound] = useState("");
   const [checked, setChecked] = useState(0);
   const [totalWork, setTotalWork] = useState(0);
+  const [searchRange, setSearchRange] = useState({ first: "", current: "", last: "" });
   const [running, setRunning] = useState(false);
   const [startedAt, setStartedAt] = useState(0);
   const runId = useRef(0);
-  const alphabet = customCharset || charsets[charsetKey];
+  const alphabet = charsetKey === "custom" ? customCharset : charsets[charsetKey];
   const keyspaceEstimate = useMemo(() => estimateCandidates(alphabet.length, minLength, maxLength), [alphabet.length, minLength, maxLength]);
   const progress = totalWork ? Math.min(100, (checked / totalWork) * 100) : 0;
   const elapsedSeconds = running && startedAt ? Math.max(0.1, (Date.now() - startedAt) / 1000) : 0;
@@ -130,6 +139,7 @@ export default function ReverseHashLabPage() {
     setFound("");
     setChecked(0);
     setTotalWork(words.length);
+    setSearchRange({ first: words[0] ?? "", current: words[0] ?? "", last: words[words.length - 1] ?? "" });
     setRunning(true);
     setStartedAt(Date.now());
     setStatus(`Checking ${words.length.toLocaleString()} wordlist candidates...`);
@@ -137,6 +147,10 @@ export default function ReverseHashLabPage() {
       if (runId.current !== currentRun) return;
       const value = await digest(algorithm, words[index], salt, iterations);
       setChecked(index + 1);
+      if (index % 25 === 0 || index === words.length - 1) {
+        const batchEnd = Math.min(words.length - 1, index + 24);
+        setSearchRange({ first: words[0] ?? "", current: `${words[index]} -> ${words[batchEnd]}`, last: words[words.length - 1] ?? "" });
+      }
       if (value === normalize(target)) {
         setFound(words[index]);
         setStatus(`Match found at row ${index + 1}.`);
@@ -154,15 +168,18 @@ export default function ReverseHashLabPage() {
     runId.current = currentRun;
     const safeMin = Math.max(1, Math.min(8, minLength));
     const safeMax = Math.max(safeMin, Math.min(8, maxLength));
-    const total = estimateCandidates(alphabet.length, safeMin, safeMax);
     if (!alphabet.length) {
       setStatus("Add at least one character to brute force.");
       return;
     }
+    const total = estimateCandidates(alphabet.length, safeMin, safeMax);
+    const firstCandidate = candidateAt(0, alphabet, safeMin, safeMax);
+    const lastCandidate = candidateAt(total - 1, alphabet, safeMin, safeMax);
 
     setFound("");
     setChecked(0);
     setTotalWork(total);
+    setSearchRange({ first: firstCandidate, current: firstCandidate, last: lastCandidate });
     setRunning(true);
     setStartedAt(Date.now());
     setStatus(`Brute forcing ${total.toLocaleString()} candidates...`);
@@ -171,6 +188,10 @@ export default function ReverseHashLabPage() {
       const candidate = candidateAt(index, alphabet, safeMin, safeMax);
       const value = await digest(algorithm, candidate, salt, iterations);
       setChecked(index + 1);
+      if (index % 250 === 0 || index === total - 1) {
+        const batchEnd = Math.min(total - 1, index + 249);
+        setSearchRange({ first: firstCandidate, current: `${candidate} -> ${candidateAt(batchEnd, alphabet, safeMin, safeMax)}`, last: lastCandidate });
+      }
       if (value === normalize(target)) {
         setFound(candidate);
         setStatus(`Brute force match found after ${(index + 1).toLocaleString()} attempts.`);
@@ -191,6 +212,7 @@ export default function ReverseHashLabPage() {
     setTarget(await digest(algorithm, "hello", salt, iterations));
     setMaxLength((prev) => Math.max(prev, 5));
     setFound("");
+    setSearchRange({ first: "", current: "", last: "" });
     setStatus(`Loaded ${algorithm} sample for "hello".`);
   };
 
@@ -241,13 +263,14 @@ export default function ReverseHashLabPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Character set">
                 <select className="field" value={charsetKey} onChange={(event) => setCharsetKey(event.target.value as keyof typeof charsets)}>
-                  <option value="lowercase">a-z</option>
-                  <option value="digits">0-9</option>
-                  <option value="lowercaseDigits">a-z, 0-9</option>
-                  <option value="alphaNumeric">a-z, A-Z, 0-9</option>
+                  <option value="lowercase">{charsetLabels.lowercase}</option>
+                  <option value="digits">{charsetLabels.digits}</option>
+                  <option value="lowercaseDigits">{charsetLabels.lowercaseDigits}</option>
+                  <option value="alphaNumeric">{charsetLabels.alphaNumeric}</option>
+                  <option value="custom">{charsetLabels.custom}</option>
                 </select>
               </Field>
-              <Field label="Custom charset">
+              <Field label="Custom charset" hint="Used only when Character set is Custom. Duplicate characters are removed.">
                 <input className="field font-mono" value={customCharset} onChange={(event) => setCustomCharset(Array.from(new Set(event.target.value.split(""))).join(""))} />
               </Field>
               <Field label="Min length">
@@ -258,7 +281,7 @@ export default function ReverseHashLabPage() {
               </Field>
               <div className="panel-muted">
                 <div className="text-xs font-semibold uppercase text-slate-500">Estimated keyspace</div>
-                <div className="mt-1 text-sm text-slate-700">{keyspaceEstimate.toLocaleString()} candidates.</div>
+                <div className="mt-1 text-sm text-slate-700">{keyspaceEstimate.toLocaleString()} candidates across {charsetLabels[charsetKey]}.</div>
               </div>
             </div>
           )}
@@ -271,6 +294,11 @@ export default function ReverseHashLabPage() {
           <div className="h-3 overflow-hidden rounded-full bg-slate-200">
             <div className="h-full rounded-full bg-teal-600 transition-all" style={{ width: `${progress}%` }} />
           </div>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <ValueRow label="First candidate" value={searchRange.first || "not started"} copy={false} />
+          <ValueRow label="Current range" value={searchRange.current || "not started"} copy={false} />
+          <ValueRow label="Last candidate" value={searchRange.last || "not started"} copy={false} />
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           <StatusPill tone={found ? "success" : "info"}>{status}</StatusPill>
