@@ -15,8 +15,13 @@ const atbash = (text: string) =>
 
 export default function AtbashCipherPage() {
   const [text, setText] = useState("Hello World");
+  const [activeIndex, setActiveIndex] = useState(0);
   const cipher = useMemo(() => atbash(text), [text]);
   const roundTrip = useMemo(() => atbash(cipher), [cipher]);
+  const safeActiveIndex = Math.min(activeIndex, Math.max(text.length - 1, 0));
+  const activeChar = text[safeActiveIndex] ?? "";
+  const activeOut = /[a-z]/i.test(activeChar) ? atbash(activeChar) : activeChar;
+  const steppedOutput = Array.from(text).map((char, index) => index <= safeActiveIndex ? atbash(char) : char).join("");
 
   const mapping = ALPHA.split("").map((letter, index) => ({
     from: letter,
@@ -37,6 +42,9 @@ export default function AtbashCipherPage() {
               onChange={(e) => setText(e.target.value)}
             />
           </Field>
+          <Field label={`Letter change: character ${safeActiveIndex + 1} of ${Math.max(text.length, 1)}`}>
+            <input type="range" min="0" max={Math.max(text.length - 1, 0)} value={safeActiveIndex} onChange={(event) => setActiveIndex(Number(event.target.value))} className="w-full" />
+          </Field>
           <div className="mt-3 flex gap-2">
             <button className="btn" onClick={() => setText("Hello World")}>Sample</button>
             <button className="btn" onClick={() => setText("")}>Clear</button>
@@ -49,10 +57,28 @@ export default function AtbashCipherPage() {
           </div>
         </Card>
       </div>
+      <Card title="Normal and reversed alphabets">
+        <div className="space-y-2 font-mono text-sm">
+          <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(26, minmax(1.5rem, 1fr))" }}>{ALPHA.split("").map((letter) => <span key={letter} className={`rounded border px-1 py-2 text-center ${letter === activeChar.toUpperCase() ? "changed-byte border-amber-300 bg-amber-100 text-amber-950" : "border-slate-200 bg-slate-50"}`}>{letter}</span>)}</div>
+          <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(26, minmax(1.5rem, 1fr))" }}>{ALPHA.split("").reverse().map((letter) => <span key={letter} className={`rounded border px-1 py-2 text-center ${letter === activeOut.toUpperCase() ? "changed-byte border-amber-300 bg-amber-100 text-amber-950" : "border-slate-200 bg-slate-50"}`}>{letter}</span>)}</div>
+        </div>
+      </Card>
+      <Card title="One letter at a time">
+        <div className="grid gap-4 md:grid-cols-[8rem_1fr]">
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-center">
+            <div className="text-xs font-semibold uppercase text-amber-800">Current mirror</div>
+            <div className="mt-2 font-mono text-2xl">{activeChar || " "} {"->"} {activeOut || " "}</div>
+          </div>
+          <div>
+            <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Atbash output builds progressively</div>
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-sm">{steppedOutput}</div>
+          </div>
+        </div>
+      </Card>
       <Card title="Reflection mapping (A-Z <-> Z-A)">
         <div className="grid grid-cols-3 gap-1 sm:grid-cols-6 lg:grid-cols-13">
           {mapping.map(({ from, to }) => (
-            <div key={from} className="rounded-md border border-slate-200 bg-slate-50 p-2 text-center font-mono text-sm">
+            <div key={from} className={`rounded-md border p-2 text-center font-mono text-sm ${from === activeChar.toUpperCase() ? "changed-byte border-amber-300 bg-amber-100 text-amber-950" : "border-slate-200 bg-slate-50"}`}>
               {from} {"<->"} {to}
             </div>
           ))}

@@ -12,6 +12,7 @@ export default function PBKDF2Page() {
   const [length, setLength] = useState(256);
   const [derived, setDerived] = useState("");
   const [ms, setMs] = useState(0);
+  const [compareDerived, setCompareDerived] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -25,6 +26,16 @@ export default function PBKDF2Page() {
       }
     }
     run().catch((error) => setDerived(error instanceof Error ? error.message : "PBKDF2 failed"));
+    return () => { cancelled = true; };
+  }, [hash, iterations, length, password, salt]);
+
+  useEffect(() => {
+    let cancelled = false;
+    pbkdf2Hex(password, salt, Math.max(1, Math.floor(iterations / 10)), hash, length).then((output) => {
+      if (!cancelled) setCompareDerived(output);
+    }).catch(() => {
+      if (!cancelled) setCompareDerived("");
+    });
     return () => { cancelled = true; };
   }, [hash, iterations, length, password, salt]);
 
@@ -53,6 +64,25 @@ export default function PBKDF2Page() {
       <Card title="Timing chart">
         <div className="h-4 rounded bg-slate-100"><div className="h-4 rounded bg-cyan-500" style={{ width: `${Math.min(100, ms / 10)}%` }} /></div>
         <p className="mt-3 text-sm text-slate-600">More iterations increase attacker cost and user wait time. Tune on your target devices.</p>
+      </Card>
+      <Card title="What changes when iterations increase">
+        <div className="grid gap-3 md:grid-cols-2">
+          <ValueRow label={`${Math.max(1, Math.floor(iterations / 10))} iterations`} value={compareDerived || "computing..."} />
+          <ValueRow label={`${iterations} iterations`} value={derived || "computing..."} />
+        </div>
+        <p className="mt-3 text-sm text-slate-600">The same password and salt are hashed again and again. More iterations make each password guess slower, which makes bulk guessing more expensive.</p>
+      </Card>
+      <Card title="Why salt is needed">
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+            <div className="text-xs font-semibold uppercase text-slate-500">Without a salt</div>
+            <p className="mt-2 text-sm">If two users choose <span className="font-mono">password123</span>, their stored derived values can match.</p>
+          </div>
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-emerald-950">
+            <div className="text-xs font-semibold uppercase">With different salts</div>
+            <p className="mt-2 text-sm">The same password becomes different stored key material for each user, so precomputed guesses do not transfer cleanly.</p>
+          </div>
+        </div>
       </Card>
       <WarningBadge>PBKDF2 needs a unique random salt per password. For new password storage, memory-hard KDFs such as Argon2id are generally preferred where available.</WarningBadge>
     </div>

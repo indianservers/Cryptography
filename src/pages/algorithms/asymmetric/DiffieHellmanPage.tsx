@@ -40,6 +40,28 @@ export default function DiffieHellmanPage() {
           </div>
         </Card>
       </div>
+      <Card title="Alice and Bob exchange picture">
+        <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr]">
+          <div className="rounded-md border border-sky-200 bg-sky-50 p-4 text-sky-950">
+            <div className="text-xs font-semibold uppercase">Alice</div>
+            <div className="mt-2 font-mono text-sm">secret a={values.a.toString()}</div>
+            <div className="mt-1 font-mono text-sm">sends A={values.A.toString()}</div>
+            <div className="mt-3 rounded-md bg-white/70 p-2 font-mono text-lg">final secret {values.aliceSecret.toString()}</div>
+          </div>
+          <div className="flex items-center justify-center rounded-md border border-slate-200 bg-slate-50 p-3 text-center text-sm font-semibold text-slate-700">
+            A and B cross the network
+          </div>
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-emerald-950">
+            <div className="text-xs font-semibold uppercase">Bob</div>
+            <div className="mt-2 font-mono text-sm">secret b={values.b.toString()}</div>
+            <div className="mt-1 font-mono text-sm">sends B={values.B.toString()}</div>
+            <div className="mt-3 rounded-md bg-white/70 p-2 font-mono text-lg">final secret {values.bobSecret.toString()}</div>
+          </div>
+        </div>
+        <div className={`mt-3 rounded-md border p-3 text-sm font-semibold ${values.aliceSecret === values.bobSecret ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"}`}>
+          Shared secret match: {values.aliceSecret.toString()} {values.aliceSecret === values.bobSecret ? "=" : "!="} {values.bobSecret.toString()}
+        </div>
+      </Card>
       <Card title="Modular exponentiation visualization">
         <div className="grid gap-6 xl:grid-cols-2">
           {[["Alice public exponentiation", values.traceA], ["Bob public exponentiation", values.traceB]].map(([title, rows]) => (

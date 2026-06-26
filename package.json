@@ -6,6 +6,10 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:vectors": "vitest run tests/algorithm-vectors.test.ts",
+    "test:smoke": "vitest run tests/route-smoke.spec.ts",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
@@ -23,6 +27,7 @@
     "autoprefixer": "^10.4.22",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.18",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9"
   }
 }

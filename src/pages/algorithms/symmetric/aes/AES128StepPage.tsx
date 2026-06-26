@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "../../../../components/common/PageHeader";
 import { InputPanel } from "../../../../components/common/InputPanel";
 import { MatrixView } from "../../../../components/common/MatrixView";
@@ -25,6 +25,7 @@ export default function AES128StepPage() {
   const [selectedByte, setSelectedByte] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(900);
+  const operationRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const plaintextBytes = new TextEncoder().encode(plaintext).length;
   const keyBytes = new TextEncoder().encode(key).length;
 
@@ -35,10 +36,15 @@ export default function AES128StepPage() {
   const changed = changedIndexes(step.previousState, step.state);
   const sboxByte = step.byteMap?.[selectedByte] ?? step.byteMap?.[0];
   const visibleSBox = step.operation === "SubBytes" && sboxByte;
+  const activeByte = visibleSBox ? sboxByte.index : changed[0];
 
   useEffect(() => {
     setStepIndex((current) => Math.min(current, aes.steps.length - 1));
   }, [aes.steps.length]);
+
+  useEffect(() => {
+    operationRefs.current[activeStepIndex]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  }, [activeStepIndex]);
 
   useEffect(() => {
     if (!playing) return;
@@ -53,6 +59,7 @@ export default function AES128StepPage() {
 
   const setAsciiPlaintext = (value: string) => setPlaintext(value);
   const setAsciiKey = (value: string) => setKey(value);
+  const goToStep = (nextStep: number) => setStepIndex(Math.max(0, Math.min(aes.steps.length - 1, nextStep)));
 
   return (
     <div className="space-y-6">
@@ -72,8 +79,8 @@ export default function AES128StepPage() {
             <label className="label">Speed {speed} ms<input className="mt-3 w-full" type="range" min="150" max="1600" step="50" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} /></label>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button className="btn" onClick={() => setStepIndex(Math.max(0, activeStepIndex - 1))}>Previous Step</button>
-            <button className="btn" onClick={() => setStepIndex(Math.min(aes.steps.length - 1, activeStepIndex + 1))}>Next Step</button>
+            <button className="btn" onClick={() => goToStep(activeStepIndex - 1)}>Previous Step</button>
+            <button className="btn btn-primary" onClick={() => goToStep(activeStepIndex + 1)}>Next Step</button>
             <button className="btn" onClick={() => setPlaying(true)}>Auto Play</button>
             <button className="btn" onClick={() => setPlaying(false)}>Pause</button>
             <button className="btn" onClick={() => { setPlaying(false); setStepIndex(0); }}>Reset</button>
@@ -92,15 +99,15 @@ export default function AES128StepPage() {
             </div>
             <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">{step.operation}</span>
           </div>
-          <MatrixView values={matrixValues(step.state)} changed={changed} />
+          <MatrixView values={matrixValues(step.state)} changed={changed} active={activeByte} />
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
               <div className="text-xs font-semibold uppercase text-slate-500">State hex</div>
               <div className="mt-1 break-all font-mono text-sm">{hexWord(step.state)}</div>
             </div>
             <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-              <div className="text-xs font-semibold uppercase text-slate-500">Changed bytes</div>
-              <div className="mt-1 font-mono text-sm">{changed.length ? changed.map((index) => index.toString()).join(", ") : "none"}</div>
+              <div className="text-xs font-semibold uppercase text-slate-500">Current byte / changed bytes</div>
+              <div className="mt-1 font-mono text-sm">{activeByte ?? "none"} / {changed.length ? changed.map((index) => index.toString()).join(", ") : "none"}</div>
             </div>
           </div>
         </div>
@@ -126,7 +133,7 @@ export default function AES128StepPage() {
           <h2 className="mb-4 text-lg font-semibold">Round key at this step</h2>
           {step.roundKey ? (
             <div className="space-y-4">
-              <MatrixView values={matrixValues(step.roundKey)} changed={changed} />
+              <MatrixView values={matrixValues(step.roundKey)} changed={changed} active={activeByte} />
               <div className="grid gap-2 md:grid-cols-4">{[0, 1, 2, 3].map((word) => <div key={word} className="rounded-md bg-slate-50 p-3"><div className="text-xs uppercase text-slate-500">w{step.round * 4 + word}</div><div className="font-mono text-sm">{hexWord(step.roundKey!.slice(word * 4, word * 4 + 4))}</div></div>)}</div>
             </div>
           ) : (
@@ -180,7 +187,7 @@ export default function AES128StepPage() {
       <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold">All internal operations</h2>
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-          {aes.steps.map((item, index) => <button key={item.id} onClick={() => setStepIndex(index)} className={`rounded-md border p-3 text-left text-sm ${index === activeStepIndex ? "border-cyan-400 bg-cyan-50" : "border-slate-200 bg-slate-50"}`}>
+          {aes.steps.map((item, index) => <button key={item.id} ref={(element) => { operationRefs.current[index] = element; }} onClick={() => setStepIndex(index)} className={`rounded-md border p-3 text-left text-sm ${index === activeStepIndex ? "changed-byte border-amber-400 bg-amber-100 text-amber-950" : "border-slate-200 bg-slate-50"}`}>
             <div className="font-mono text-xs text-slate-500">Step {index + 1}</div>
             <div className="font-semibold">{item.title}</div>
             <div className="mt-1 text-xs text-slate-600">Round {item.round} - {item.operation}</div>

@@ -13,8 +13,14 @@ const supportStyles: Record<BrowserSupport, string> = {
   Mixed: "border-violet-200 bg-violet-50 text-violet-800",
 };
 
+const implementationLabels: Record<ImplementationStatus, string> = {
+  Real: "Implemented",
+  Educational: "Educational",
+  Substitute: "Placeholder",
+};
+
 export function ImplementationBadge({ status, compact = false }: { status: ImplementationStatus; compact?: boolean }) {
-  return <span title={`Implementation status: ${status}`} className={`rounded-full border px-2 py-0.5 font-semibold ${compact ? "text-[10px]" : "text-xs"} ${implementationStyles[status]}`}>{status}</span>;
+  return <span title={`Implementation status: ${implementationLabels[status]}`} className={`rounded-full border px-2 py-0.5 font-semibold ${compact ? "text-[10px]" : "text-xs"} ${implementationStyles[status]}`}>{implementationLabels[status]}</span>;
 }
 
 export function BrowserSupportBadge({ support, compact = false }: { support: BrowserSupport; compact?: boolean }) {

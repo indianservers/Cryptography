@@ -65,6 +65,34 @@ export default function RSASignaturePage() {
         </Card>
       </div>
       {result.ok && (
+        <Card title="Signing and verification side by side">
+          <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr]">
+            <div className="rounded-md border border-violet-200 bg-violet-50 p-4 text-violet-950">
+              <div className="text-xs font-semibold uppercase">Signer uses private key</div>
+              <div className="mt-2 font-mono text-sm">hash {"->"} h={result.hashInteger.toString()} {"->"} h^d mod n = {result.signature.toString()}</div>
+              <p className="mt-2 text-sm">The signature is made from the digest, not from the raw message text.</p>
+            </div>
+            <div className="hidden items-center px-2 text-2xl font-semibold text-slate-400 md:flex">{"->"}</div>
+            <div className="rounded-md border border-sky-200 bg-sky-50 p-4 text-sky-950">
+              <div className="text-xs font-semibold uppercase">Verifier uses public key</div>
+              <div className="mt-2 font-mono text-sm">s^e mod n = {result.verifiedHash.toString()}</div>
+              <p className="mt-2 text-sm">Verification checks whether the public-key result matches the message digest modulo n.</p>
+            </div>
+          </div>
+        </Card>
+      )}
+      <Card title="Where the hash is created">
+        <div className="grid gap-2 md:grid-cols-4">
+          {["Message", `${hashName} digest`, "Sign digest", "Verify digest"].map((step, index) => (
+            <div key={step} className={`rounded-md border p-3 text-sm ${index === 1 ? "changed-byte border-amber-300 bg-amber-100 text-amber-950" : "border-slate-200 bg-slate-50"}`}>
+              <div className="font-mono text-xs">step {index + 1}</div>
+              <div className="font-semibold">{step}</div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 break-all rounded-md border border-amber-200 bg-amber-50 p-3 font-mono text-xs text-amber-950">{digest}</div>
+      </Card>
+      {result.ok && (
         <Card title="Signing exponentiation trace">
           <div className="overflow-auto rounded-md border border-slate-200">
             <table className="w-full text-sm">

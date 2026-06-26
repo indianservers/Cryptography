@@ -64,10 +64,22 @@
   textarea.field { resize: vertical; }
   .field + .byte-preview { margin-top: 0.5rem; }
   .result-panel, .panel-muted, .panel, section { overflow-wrap: anywhere; }
+  .data-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+  }
+  .mobile-safe-panel {
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
 }
 
 @media (max-width: 640px) {
   .field, .btn, .icon-btn { min-height: 2.5rem; }
+  .btn { width: 100%; }
+  .icon-btn { width: 2.5rem; }
   table {
     display: block;
     max-width: 100%;
@@ -89,6 +101,13 @@
   }
   section, header {
     max-width: 100%;
+  }
+  .grid {
+    min-width: 0;
+  }
+  .crypto-wrap {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   .top-algorithms-menu { display: none !important; }
   table {

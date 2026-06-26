@@ -20,6 +20,7 @@ export function StepControls({ step, max, onStep }: { step: number; max: number;
       <button className="icon-btn" onClick={() => { setPlaying(false); onStep(0); }} title="Reset"><RotateCcw /></button>
       <label className="ml-2 text-sm text-slate-600">Animation speed <input type="range" min="1" max="5" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} className="align-middle" /></label>
       {playing && <span className="rounded-full bg-cyan-100 px-2 py-1 text-xs font-semibold text-cyan-800">Playing</span>}
+      <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-800">{Math.max(0, max - step)} remaining</span>
       <span className="ml-auto font-mono text-sm">Step {step + 1} / {max + 1}</span>
     </div>
   );

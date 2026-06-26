@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { PageHeader } from "../../../components/common/PageHeader";
 import { Card } from "../../../components/common/Field";
 import { WarningBadge } from "../../../components/common/WarningBadge";
@@ -107,6 +108,9 @@ export default function TestVectorRunnerPage() {
           </div>
         </Card>
       </div>
+      <Card title="Why test vectors are useful">
+        <p className="text-sm text-slate-700">A test vector is a known input with a known correct output. If this browser produces the same bytes, it is a quick sanity check that encoding, padding, endianness, and algorithm wiring match the expected behavior.</p>
+      </Card>
       <Card title="Run results">
         {visibleResults.length ? (
           <div className="overflow-auto rounded-md border border-slate-200">
@@ -115,7 +119,7 @@ export default function TestVectorRunnerPage() {
               <tbody>
                 {visibleResults.map((result) => (
                   <tr key={result.id} className="border-t border-slate-100">
-                    <td className={`p-2 font-semibold ${result.pass ? "text-emerald-700" : "text-rose-700"}`}>{result.pass ? "PASS" : "FAIL"}</td>
+                    <td className={`p-2 font-semibold ${result.pass ? "text-emerald-700" : "text-rose-700"}`}>{result.pass ? <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /> PASS</span> : "FAIL"}</td>
                     <td className="p-2">{result.algorithm}</td>
                     <td className="p-2">{result.name}{result.error ? <div className="mt-1 text-xs text-rose-700">{result.error}</div> : null}</td>
                     <td className="break-all p-2 font-mono text-xs">{result.actual || "-"}</td>

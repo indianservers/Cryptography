@@ -10,11 +10,13 @@ import { bytesToHex, sha1Schedule } from "../../../lib/hashCores";
 export default function SHA1Page() {
   const [message, setMessage] = useState("abc");
   const [digest, setDigest] = useState("");
+  const [sha256Digest, setSha256Digest] = useState("");
   const [roundLimit, setRoundLimit] = useState(20);
   const trace = useMemo(() => sha1Schedule(message), [message]);
 
   useEffect(() => {
     digestHex("SHA-1", message).then(setDigest).catch((error) => setDigest(error instanceof Error ? error.message : "SHA-1 failed"));
+    digestHex("SHA-256", message).then(setSha256Digest).catch((error) => setSha256Digest(error instanceof Error ? error.message : "SHA-256 failed"));
   }, [message]);
 
   return (
@@ -36,6 +38,17 @@ export default function SHA1Page() {
           </div>
         </Card>
       </div>
+      <Card title="Why SHA-1 is no longer recommended">
+        <div className="rounded-md border border-rose-200 bg-rose-50 p-4 text-sm text-rose-950">
+          SHA-1 has practical collision attacks: two different inputs can be crafted to produce the same digest. That breaks signatures, certificates, and integrity checks where an attacker can choose the content.
+        </div>
+      </Card>
+      <Card title="SHA-1 and SHA-256 on the same input">
+        <div className="grid gap-3 md:grid-cols-2">
+          <ValueRow label="SHA-1 digest, 160 bits" value={digest} />
+          <ValueRow label="SHA-256 digest, 256 bits" value={sha256Digest} />
+        </div>
+      </Card>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title="Padded block bytes"><MatrixView columns={8} values={trace.padded.slice(0, 64).map((byte) => byte.toString(16).padStart(2, "0"))} changed={[new TextEncoder().encode(message).length]} /></Card>
         <Card title="80-word schedule preview"><div className="grid max-h-72 grid-cols-2 gap-2 overflow-auto md:grid-cols-4">{trace.words.map((word, index) => <div key={index} className="rounded-md border border-slate-200 bg-slate-50 p-2 font-mono text-xs"><span className="text-slate-500">W{index}</span><br />{word.toString(16).padStart(8, "0")}</div>)}</div></Card>

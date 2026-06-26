@@ -52,6 +52,16 @@ export default function ROT13Page() {
           ))}
         </div>
       </Card>
+      <Card title="ROT13 beside Caesar shift 13">
+        <div className="grid gap-3 md:grid-cols-3">
+          <ValueRow label="Original text" value={text} />
+          <ValueRow label="Caesar +13" value={caesar(text, 13)} />
+          <ValueRow label="ROT13 again" value={roundTrip} />
+        </div>
+        <div className="mt-4 rounded-md border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">
+          ROT13 is not a different algorithm from Caesar here: it is Caesar with a fixed shift of 13. Because the alphabet has 26 letters, applying the same shift twice lands back at the start.
+        </div>
+      </Card>
       <WarningBadge>ROT13 provides zero secrecy: any reader can decode it instantly. Use it only to obscure spoilers or trivia, never to protect data.</WarningBadge>
     </div>
   );

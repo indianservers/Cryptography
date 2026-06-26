@@ -20,12 +20,11 @@ export function PageChrome() {
   useEffect(() => {
     document.title = algorithm ? `${algorithm.label} — Mega Crypto Suite` : "Home — Mega Crypto Suite";
     if (algorithm) {
-      setRecentRoutes((current) => {
-        const next = [algorithm.route, ...current.filter((route) => route !== algorithm.route)].slice(0, 8);
-        localStorage.setItem(recentKey, JSON.stringify(next));
-        window.dispatchEvent(new Event("recent-routes-change"));
-        return next;
-      });
+      const current = readRecentRoutes();
+      const next = [algorithm.route, ...current.filter((route) => route !== algorithm.route)].slice(0, 8);
+      localStorage.setItem(recentKey, JSON.stringify(next));
+      setRecentRoutes(next);
+      window.dispatchEvent(new Event("recent-routes-change"));
     }
   }, [algorithm]);
 
@@ -39,6 +38,11 @@ export function PageChrome() {
   }, []);
 
   const recent = recentRoutes.map((route) => navigationItems.find((item) => item.route === route)).filter(Boolean).slice(0, 5);
+  const flowSteps = algorithm ? [
+    algorithm.inputs[0] ?? "Input",
+    algorithm.visualizers[0] ?? "Transform",
+    algorithm.outputs[0] ?? "Output",
+  ] : [];
 
   return (
     <>
@@ -55,6 +59,24 @@ export function PageChrome() {
           {recent.length ? recent.map((item) => item && <Link key={item.route} className="rounded border border-slate-200 px-2 py-1 transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900" to={item.route}>{item.label}</Link>) : <span>None yet</span>}
         </div>
       </div>
+      {algorithm && (
+        <div className="sticky top-0 z-30 mb-4 rounded-md border border-teal-200 bg-white/95 p-2 text-xs shadow-sm backdrop-blur">
+          <div className="flex max-w-full items-center gap-2 overflow-x-auto">
+            <span className="shrink-0 font-bold uppercase tracking-wide text-teal-800">Flow</span>
+            {flowSteps.map((step, index) => (
+              <span key={`${step}-${index}`} className="shrink-0 rounded-md border border-teal-100 bg-teal-50 px-2 py-1 font-semibold text-teal-900">
+                {index + 1}. {step}
+              </span>
+            ))}
+            <span className="mx-1 h-5 w-px shrink-0 bg-slate-200" />
+            <span title="Green marks success or final output." className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 font-semibold text-emerald-800">success</span>
+            <span title="Blue marks the current step or active transformation." className="shrink-0 rounded-full border border-blue-200 bg-blue-50 px-2 py-1 font-semibold text-blue-800">current</span>
+            <span title="Orange marks warnings, validation issues, or common mistakes." className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 font-semibold text-amber-900">warning</span>
+            <span title="Arrows show direction of data movement from input to transformation to output." className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 font-semibold text-slate-700">arrow = next</span>
+            <span title="Highlighted blocks show bytes, letters, or words that changed in the current step." className="shrink-0 rounded-full border border-cyan-200 bg-cyan-50 px-2 py-1 font-semibold text-cyan-800">highlight = changed</span>
+          </div>
+        </div>
+      )}
       {showComparison && <AlgorithmComparisonMode open={showComparison} onClose={() => setShowComparison(false)} />}
       {showShortcuts && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 p-4 backdrop-blur-sm" onClick={() => setShowShortcuts(false)}><div className="max-w-lg rounded-md bg-white p-5 shadow-xl" onClick={(event) => event.stopPropagation()}><h2 className="text-lg font-semibold">Keyboard Shortcuts</h2><div className="mt-4 grid gap-2 text-sm"><div><kbd className="rounded bg-slate-100 px-2 py-1 font-mono">?</kbd> Toggle shortcuts</div><div><kbd className="rounded bg-slate-100 px-2 py-1 font-mono">Alt+G</kbd> Toggle glossary</div><div><kbd className="rounded bg-slate-100 px-2 py-1 font-mono">Esc</kbd> Close browser dialogs where supported</div></div><button className="btn btn-primary mt-5" onClick={() => setShowShortcuts(false)}>Close</button></div></div>}
       {showGlossary && <aside className="fixed inset-y-0 right-0 z-50 w-[min(100vw,28rem)] overflow-y-auto border-l border-slate-200 bg-white p-4 shadow-xl sm:p-5"><div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">Crypto Glossary</h2><button className="icon-btn" aria-label="Close glossary" onClick={() => setShowGlossary(false)}><X /></button></div><div className="space-y-3 text-sm text-slate-700">{[

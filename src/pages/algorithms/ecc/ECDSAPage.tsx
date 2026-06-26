@@ -12,6 +12,7 @@ export default function ECDSAPage() {
   const [hash, setHash] = useState("11");
   const [nonce, setNonce] = useState("5");
   const [rInput, setRInput] = useState("9");
+  const [curveStep, setCurveStep] = useState(1);
   const values = useMemo(() => {
     const order = BigInt(q || "19");
     const d = BigInt(privateKey || "1");
@@ -48,8 +49,26 @@ export default function ECDSAPage() {
           </div>
         </Card>
       </div>
+      <Card title="Tiny curve motion">
+        <div className="grid gap-4 md:grid-cols-[14rem_1fr]">
+          <Field label={`Nonce point step: ${curveStep}`}>
+            <input type="range" min="1" max={Number(nonce || "1")} value={Math.min(curveStep, Math.max(1, Number(nonce || "1")))} onChange={(event) => setCurveStep(Number(event.target.value))} className="w-full" />
+          </Field>
+          <div className="relative h-44 rounded-md border border-slate-200 bg-slate-50 p-4">
+            <div className="absolute left-6 right-6 top-1/2 h-px bg-slate-300" />
+            <div className="absolute bottom-6 top-6 left-1/2 w-px bg-slate-300" />
+            <div className="absolute h-5 w-5 rounded-full border-2 border-amber-500 bg-amber-100 shadow-sm transition-all" style={{ left: `${12 + ((curveStep * 17) % 76)}%`, top: `${18 + ((curveStep * 29) % 58)}%` }} title="Moving nonce point" />
+            <div className="absolute bottom-3 left-4 rounded bg-white/80 px-2 py-1 text-xs font-semibold text-slate-700">kG gives the nonce point; its x-coordinate becomes r.</div>
+          </div>
+        </div>
+      </Card>
       <Card title="Nonce reuse danger">
-        <p className="text-sm text-slate-600">If two signatures reuse the same nonce k, the equations share the same hidden value. With different hashes and visible s values, an attacker can solve for k and then d in the toy arithmetic.</p>
+        <p className="text-sm text-slate-600">The nonce is like a one-time mask for the private key inside the signature equation. If the same nonce is used twice, both signatures contain the same hidden mask. Comparing the two equations can cancel that mask and reveal the private key.</p>
+        <div className="mt-3 grid gap-2 md:grid-cols-3">
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm">Signature 1 uses k</div>
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm">Signature 2 reuses k</div>
+          <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800">Private key d can leak</div>
+        </div>
       </Card>
       <WarningBadge>Real ECDSA must use unique unpredictable nonces or deterministic nonce generation. Never paste production private keys into learning tools.</WarningBadge>
     </div>

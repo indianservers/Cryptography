@@ -35,6 +35,17 @@ export default function DESFullStepPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="DES Full Step Visualizer" category="Block Ciphers" status="Deprecated">A 16-round Feistel walkthrough showing expansion, round-key XOR, S-box compression, and L/R swapping for each DES-style round.</PageHeader>
+      <Card title="Guided DES route">
+        <div className="grid gap-2 md:grid-cols-4">
+          {["Split L0/R0", "Expand R to 48 bits", "XOR round key + S-boxes", "Swap into next round"].map((label, index) => (
+            <div key={label} className={`rounded-md border p-3 text-sm ${index === 2 ? "changed-byte border-amber-300 bg-amber-100 text-amber-950" : "border-slate-200 bg-slate-50"}`}>
+              <div className="font-mono text-xs">stage {index + 1}</div>
+              <div className="font-semibold">{label}</div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-sm text-slate-700">Use Next Step to move through rounds. The active round stays highlighted in the timeline below so the 16-stage path is visible before diving into bit strings.</p>
+      </Card>
       <Card title="Block, key, and round selector">
         <div className="grid gap-3 md:grid-cols-2">
           <Field label="64-bit block ASCII" value={block} expectedBytes={8} hint="Converted internally before the Feistel trace."><input className="field font-mono" value={block} onChange={(event) => setBlock(event.target.value)} /></Field>
@@ -60,7 +71,7 @@ export default function DESFullStepPage() {
         </Card>
       </div>
       <Card title="16-round timeline">
-        <MatrixView columns={4} values={rounds.map((item) => `R${item.round}: ${item.f.slice(0, 8)}`)} changed={[round]} />
+        <MatrixView columns={4} values={rounds.map((item) => `R${item.round}: ${item.f.slice(0, 8)}`)} active={round} />
       </Card>
       <WarningBadge>This is an educational DES-structure visualizer. DES is deprecated and should not protect real data.</WarningBadge>
     </div>

@@ -94,7 +94,8 @@ const mixedRoutes = new Set([
 ]);
 
 export function getImplementationStatus(route: string): ImplementationStatus {
-  if (webCryptoRoutes.has(route) || customRoutes.has(route) || mixedRoutes.has(route)) return "Real";
+  if (webCryptoRoutes.has(route)) return "Real";
+  if (customRoutes.has(route) || mixedRoutes.has(route)) return "Educational";
   return "Substitute";
 }
 

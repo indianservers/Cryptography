@@ -1,6 +1,5 @@
 import { AlgorithmPageShell } from "../../../components/common/AlgorithmPageShell";
 
 export default function BcryptPage() {
-  return <AlgorithmPageShell title="bcrypt" category="Key Derivation Functions" status="Legacy" intro="Inspect bcrypt's cost parameter and salt-bearing password hash format." inputs={["Password","Cost","Salt"]} outputs={["Hash format","Work factor estimate"]} visualizers={["EksBlowfish setup","Cost doubling chart"]} notes={["bcrypt is still common, but Argon2id is preferred for new password storage."]} />;
+  return <AlgorithmPageShell title="bcrypt" category="Key Derivation Functions" status="Legacy" intro="Conceptual preview of bcrypt cost and salt-bearing hash format; this page is not a production bcrypt implementation." inputs={["Demo password","Cost","Demo salt"]} outputs={["Format outline","Work factor estimate"]} visualizers={["EksBlowfish setup concept","Cost doubling chart"]} notes={["Exact bcrypt output requires a vetted implementation and vectors; Argon2id is preferred for new password storage."]} />;
 }
-

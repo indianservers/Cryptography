@@ -61,6 +61,26 @@ export default function ECBPatternLeakagePage() {
           ))}
         </div>
       </Card>
+      <Card title="ECB and CBC side by side">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <div className="mb-2 font-semibold">ECB keeps repeated patterns visible</div>
+            <div className="grid grid-cols-8 gap-1 rounded-md border border-red-200 bg-red-50 p-3">
+              {Array.from({ length: 64 }, (_, index) => {
+                const repeatedColor = index % 9 === 0 || index % 9 === 1 || Math.floor(index / 8) === 2 ? "bg-red-500" : "bg-red-100";
+                return <span key={index} className={`aspect-square rounded-sm ${repeatedColor}`} />;
+              })}
+            </div>
+          </div>
+          <div>
+            <div className="mb-2 font-semibold">CBC hides equality with chaining</div>
+            <div className="grid grid-cols-8 gap-1 rounded-md border border-emerald-200 bg-emerald-50 p-3">
+              {Array.from({ length: 64 }, (_, index) => <span key={index} className="aspect-square rounded-sm" style={{ backgroundColor: `hsl(${(index * 47) % 360} 65% 55%)` }} />)}
+            </div>
+          </div>
+        </div>
+        <p className="mt-3 text-sm text-slate-700">The pattern is still visible in ECB because identical plaintext blocks encrypt to identical ciphertext blocks under the same key.</p>
+      </Card>
     </div>
   );
 }

@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, ChevronDown, FileText, RotateCcw, Shuffle, Sparkles } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import type { SecurityStatus } from "../../types";
 import { PageHeader } from "./PageHeader";
 import { InputPanel } from "./InputPanel";
 import { OutputPanel } from "./OutputPanel";
+import { ModulePageFrame } from "./ModulePageFrame";
+import { IntermediateStepsPanel } from "./IntermediateStepsPanel";
+import { MobileActionBar } from "./MobileActionBar";
+import { ResponsiveDataBlock } from "./ResponsiveDataBlock";
+import { StatusLegend } from "./StatusLegend";
 import { Field, StatusPill } from "./Field";
 import { WarningBadge } from "./WarningBadge";
 import { ExportReportButton } from "./ExportReportButton";
@@ -26,6 +32,23 @@ export interface AlgorithmPageShellProps {
 
 const sampleFor = (label: string) => {
   const lower = label.toLowerCase();
+  if (/\bkey size\b/.test(lower)) return "128";
+  if (lower.includes("round")) return "10";
+  if (lower.includes("iteration")) return "1000";
+  if (lower.includes("block size")) return "16";
+  if (lower.includes("bits") || lower.includes("length")) return "256";
+  if (/\b(p|q|g|n|e|d|k|a|b|cost|count|max)\b/.test(lower)) {
+    if (/\bp\b/.test(lower)) return "61";
+    if (/\bq\b/.test(lower)) return "53";
+    if (/\bg\b/.test(lower)) return "5";
+    if (/\bn\b/.test(lower)) return "3233";
+    if (/\be\b/.test(lower)) return "17";
+    if (/\bd\b/.test(lower)) return "2753";
+    if (/\bk\b/.test(lower)) return "7";
+    if (/\ba\b/.test(lower)) return "5";
+    if (/\bb\b/.test(lower)) return "8";
+    return "8";
+  }
   if (lower.includes("key")) return "sample-key-123456";
   if (lower.includes("nonce") || lower.includes("iv")) return "unique-iv-123456";
   if (lower.includes("salt")) return "local-demo-salt";
@@ -33,6 +56,41 @@ const sampleFor = (label: string) => {
   if (lower.includes("message") || lower.includes("plain")) return "local cryptography demo message";
   if (lower.includes("block")) return "demo block data";
   return `${label} sample`;
+};
+
+const examplesFor = (label: string) => {
+  const lower = label.toLowerCase();
+  if (/\bkey size\b/.test(lower)) return ["128", "192", "256"];
+  if (lower.includes("message") || lower.includes("plain")) return ["Hi", "Meet me at 5", "Local cryptography demo message"];
+  if (lower.includes("password")) return ["password1", "correct horse battery", "longer demo password 2026"];
+  if (lower.includes("key")) return ["demo-key", "sample-key-123456", "longer-demo-key-material"];
+  if (lower.includes("nonce") || lower.includes("iv")) return ["iv-12345", "unique-iv-123456", "demo-nonce-2026"];
+  if (lower.includes("salt")) return ["salt1234", "local-demo-salt", "user-specific-demo-salt"];
+  if (isNumericField(label)) return [sampleFor(label), String(Number(sampleFor(label)) + 1 || 2), String(Number(sampleFor(label)) + 8 || 16)];
+  return [sampleFor(label), `${label} intermediate`, `${label} advanced sample`];
+};
+
+const guidanceFor = (label: string) => {
+  const lower = label.toLowerCase();
+  if (/\bkey size\b/.test(lower)) return "Valid AES key sizes are 128, 192, or 256 bits.";
+  if (lower.includes("shift")) return "Use a whole number from 0 to 25 for alphabet shifts.";
+  if (lower.includes("iteration")) return "Use a positive number; higher values slow guessing and the demo.";
+  if (lower.includes("round")) return "Use a small positive number for classroom tracing.";
+  if (lower.includes("password")) return "Recommended demo limit: 8 to 64 characters.";
+  if (lower.includes("key")) return "Use printable ASCII for this browser demo; longer keys are easier to inspect safely.";
+  if (lower.includes("nonce") || lower.includes("iv") || lower.includes("salt")) return "Use a unique value. In real systems, never reuse a nonce where the algorithm forbids it.";
+  if (isNumericField(label)) return "Use a valid number. Small classroom values are easier to follow.";
+  return "Recommended demo limit: keep input under about 500 characters so the visualization stays readable.";
+};
+
+const complexityFor = (title: string) => {
+  const lower = title.toLowerCase();
+  if (lower.includes("rsa") || lower.includes("diffie") || lower.includes("discrete") || lower.includes("modular")) return "Complexity note: public-key math grows with integer size, so classroom examples use tiny numbers while real systems use very large ones.";
+  if (lower.includes("aes") || lower.includes("des") || lower.includes("blowfish") || lower.includes("rc5")) return "Complexity note: block ciphers process fixed-size blocks through repeated rounds, so runtime grows roughly with block count and round count.";
+  if (lower.includes("hash") || lower.includes("sha") || lower.includes("md5") || lower.includes("blake")) return "Complexity note: hash functions scan each input block once, so longer messages take proportionally more work.";
+  if (lower.includes("kdf") || lower.includes("pbkdf") || lower.includes("bcrypt") || lower.includes("scrypt") || lower.includes("argon")) return "Complexity note: KDF cost settings intentionally add work so password guessing becomes slower.";
+  if (lower.includes("base") || lower.includes("hex") || lower.includes("binary")) return "Complexity note: encoding is linear; each byte is regrouped or rewritten once.";
+  return "Complexity note: this demo is sized for learning, so the visualization favors clarity over raw throughput.";
 };
 
 const tabs = ["Overview", "Interactive Demo", "Step-by-Step", "Security Notes", "Test Vectors"] as const;
@@ -157,6 +215,11 @@ const textReport = (data: { title: string; category: string; status: SecuritySta
   "Security notes:",
   ...data.notes.map((note) => `- ${note}`),
 ].join("\n");
+const outputTone = (label: string, index: number, total: number) => {
+  const lower = label.toLowerCase();
+  if (index === total - 1 || /final|result|cipher|digest|tag|key|root|output/i.test(lower)) return "border-emerald-200 bg-emerald-50/70 text-emerald-900";
+  return "border-blue-200 bg-blue-50/70 text-blue-900";
+};
 const diffCharacters = (before: string, after: string) => Array.from({ length: Math.max(before.length, after.length) }, (_, index) => ({
   index,
   before: before[index] ?? "",
@@ -289,11 +352,17 @@ async function computeRealOutputs(title: string, values: Record<string, string>,
 }
 
 export function AlgorithmPageShell({ title, category, status, intro, inputs, outputs, visualizers, notes }: AlgorithmPageShellProps) {
+  const location = useLocation();
+  const route = location.pathname;
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(inputs.map((input) => [input, sampleFor(input)])));
   const [encoding, setEncoding] = useState("UTF-8");
   const [format, setFormat] = useState("Hex");
   const [saved, setSaved] = useState("");
-  const [activeTab, setActiveTab] = useState<Tab>("Interactive Demo");
+  const tabKey = `algorithm-tab:${title}`;
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const stored = localStorage.getItem(tabKey) as Tab | null;
+    return stored && tabs.includes(stored) ? stored : "Interactive Demo";
+  });
   const [step, setStep] = useState(0);
   const [expanded, setExpanded] = useState<string | null>("formula");
   const combined = JSON.stringify({ title, values, encoding, format });
@@ -313,6 +382,14 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
   const allOutputText = derived.map((item) => `${item.output}: ${item.value}`).join("\n\n");
   const tabClass = (tab: Tab) => `shrink-0 rounded-md border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${activeTab === tab ? "border-teal-700 bg-teal-700 text-white shadow-sm" : "border-slate-200 bg-white text-slate-700 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900"}`;
   const activeStepName = visualizers[step % Math.max(visualizers.length, 1)] ?? "Demo step";
+  const runDemo = () => {
+    if (validation.length) return;
+    document.getElementById("output")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const chooseTab = (tab: Tab) => {
+    setActiveTab(tab);
+    localStorage.setItem(tabKey, tab);
+  };
   const resetValues = () => {
     setValues(Object.fromEntries(inputs.map((input) => [input, sampleFor(input)])));
     setEncoding("UTF-8");
@@ -323,18 +400,20 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
   return (
     <div className="space-y-6">
       <PageHeader title={title} category={category} status={status}>{intro}</PageHeader>
+      <ModulePageFrame route={route} category={category} footer={<StatusLegend />}>
       <div className="flex max-w-full gap-2 overflow-x-auto rounded-md border border-slate-200 bg-white p-2 shadow-sm">
-        {tabs.map((tab) => <button key={tab} className={tabClass(tab)} onClick={() => setActiveTab(tab)}>{tab}</button>)}
+        {tabs.map((tab) => <button key={tab} className={tabClass(tab)} onClick={() => chooseTab(tab)}>{tab}</button>)}
       </div>
 
       {activeTab === "Overview" && (
         <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-3 text-lg font-semibold">Overview</h2>
           <p className="max-w-4xl text-sm text-slate-700">{intro}</p>
-          <div className="mt-5 grid gap-4 md:grid-cols-3">
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><div className="text-xs font-semibold uppercase text-slate-500">Category</div><div className="mt-1 font-semibold">{category}</div></div>
             <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><div className="text-xs font-semibold uppercase text-slate-500">Inputs</div><div className="mt-1 text-sm text-slate-700">{inputs.map(displayInputLabel).join(", ")}</div></div>
             <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><div className="text-xs font-semibold uppercase text-slate-500">Outputs</div><div className="mt-1 text-sm text-slate-700">{outputs.join(", ")}</div></div>
+            <div className="rounded-md border border-blue-200 bg-blue-50 p-4"><div className="text-xs font-semibold uppercase text-blue-700">Complexity and use</div><div className="mt-1 text-sm text-blue-900">{complexityFor(title)}</div></div>
           </div>
         </section>
       )}
@@ -351,6 +430,17 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
                 return (
                   <Field key={input} label={displayInputLabel(input)} value={isMaterial ? value : undefined} expectedBytes={isMaterial ? expectedBytes : undefined} hint={materialHintFor(input)}>
                     <input className={`field ${issue ? "border-amber-400 focus:border-amber-500 focus:ring-amber-100" : ""}`} placeholder={sampleFor(input)} value={value} onChange={(event) => update(input, event.target.value)} />
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 font-semibold">{value.length} chars</span>
+                      <span>{guidanceFor(input)}</span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {examplesFor(input).map((example, index) => (
+                        <button key={`${input}-${example}-${index}`} type="button" className="rounded border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900" onClick={() => update(input, example)}>
+                          {["Beginner", "Intermediate", "Advanced"][index]}: {example}
+                        </button>
+                      ))}
+                    </div>
                     {isMaterial && <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600"><span className="font-semibold">Internal hex:</span> <span className="font-mono">{materialHex(value, expectedBytes ?? 16)}</span></div>}
                     {issue && <span className="mt-1 block text-xs font-semibold text-amber-700">{issue.message}</span>}
                   </Field>
@@ -361,10 +451,13 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
                 <label className="text-sm font-medium">Output format<select className="field mt-1" value={format} onChange={(event) => setFormat(event.target.value)}><option>Text</option><option>Hex</option><option>Base64</option><option>Binary</option></select></label>
               </div>
               <div className="flex flex-wrap gap-2">
+                <button className="btn btn-primary" onClick={runDemo} disabled={validation.length > 0} title={validation[0]?.message ?? "Run the demo and jump to the output section"}><CheckCircle2 className="h-4 w-4" /> Run</button>
                 <button className="btn btn-primary" onClick={() => setValues(Object.fromEntries(inputs.map((input) => [input, sampleFor(input)])))}><Sparkles className="h-4 w-4" /> Sample</button>
                 <button className="btn" onClick={() => setValues((current) => Object.fromEntries(inputs.map((input) => [input, /key|iv|nonce|salt|block|seed|scalar/i.test(input) ? randomAscii(16) : current[input] || sampleFor(input)])))}><Shuffle className="h-4 w-4" /> Random fields</button>
                 <button className="btn" onClick={resetValues}><RotateCcw className="h-4 w-4" /> Reset</button>
               </div>
+              {validation.length > 0 && <div className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs font-semibold text-amber-900">Run is disabled until this is fixed: {validation[0].field} - {validation[0].message}</div>}
+              <MobileActionBar actions={[{ label: "Run", onClick: runDemo, disabled: validation.length > 0, tone: "primary" }, { label: "Reset", onClick: resetValues }]} />
               <div className={`rounded-md border p-3 text-sm ${validation.length ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>
                 <div className="flex items-center gap-2 font-semibold">{validation.length ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}{validation.length ? `${validation.length} validation issue${validation.length === 1 ? "" : "s"}` : "Inputs look ready"}</div>
               </div>
@@ -380,7 +473,8 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
               <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
                 Computed locally in the browser. Legacy or browser-unavailable primitives use small educational arithmetic or Web Crypto-backed previews instead of empty placeholders.
               </div>
-              {derived.map((output) => <div key={output.output} className="rounded-md border border-teal-100 bg-teal-50/60 p-3"><div className="flex items-center justify-between gap-3"><div className="text-xs font-semibold uppercase text-teal-800">{output.output}</div><CopyButton value={output.value} label="Copy" /></div><div className="mt-2 break-all rounded border border-teal-100 bg-white p-2 font-mono text-sm text-slate-900">{output.value}</div></div>)}
+              {!derived.length && <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">Run the demo to see intermediate values and the final output here.</div>}
+              {derived.map((output, index) => <div key={output.output} className={`rounded-md border p-3 ${outputTone(output.output, index, derived.length)}`}><div className="mb-2 text-xs font-semibold uppercase">{index === derived.length - 1 ? "Final output" : "Intermediate result"}</div><ResponsiveDataBlock label={output.output} value={output.value} copyable /></div>)}
               <CopyButton value={allOutputText} label="Copy all outputs" />
             </div>
           </OutputPanel>
@@ -395,7 +489,18 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
           <div className="mt-4">
             <ByteLevelFlowDiagram input={firstInput} output={firstOutput} operation={title} activeStep={step} />
           </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{visualizers.map((item, index) => <div key={item} className={`rounded-md border p-4 ${index === step ? "border-teal-300 bg-teal-50" : "border-slate-200 bg-slate-50"}`}><div className="font-semibold">{item}</div><div className="mt-3 grid grid-cols-8 gap-1">{Array.from({ length: 8 }, (_, bit) => <span key={bit} className={`h-3 rounded ${bit <= (index + combined.length) % 8 ? "bg-teal-500" : "bg-slate-200"} ${index === step && bit === step % 8 ? "changed-byte" : ""}`} />)}</div></div>)}</div>
+          <div className="mt-4">
+            <IntermediateStepsPanel
+              title="Visualizer stages"
+              currentStep={step}
+              steps={visualizers.map((item, index) => ({
+                label: item,
+                detail: index === step ? "This is the current stage being inspected." : "Available stage in the algorithm flow.",
+              }))}
+            >
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{visualizers.map((item, index) => <div key={item} className={`rounded-md border p-4 ${index === step ? "border-teal-300 bg-teal-50" : "border-slate-200 bg-slate-50"}`}><div className="font-semibold">{item}</div><div className="mt-3 grid grid-cols-8 gap-1">{Array.from({ length: 8 }, (_, bit) => <span key={bit} className={`h-3 rounded ${bit <= (index + combined.length) % 8 ? "bg-teal-500" : "bg-slate-200"} ${index === step && bit === step % 8 ? "changed-byte" : ""}`} />)}</div></div>)}</div>
+            </IntermediateStepsPanel>
+          </div>
           <div className="mt-5 grid gap-4 xl:grid-cols-2">
             <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><h3 className="mb-3 font-semibold">Plaintext / input</h3><pre className="max-h-52 overflow-auto whitespace-pre-wrap break-all rounded bg-white p-3 font-mono text-xs">{firstInput}</pre></div>
             <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><h3 className="mb-3 font-semibold">Ciphertext / output</h3><pre className="max-h-52 overflow-auto whitespace-pre-wrap break-all rounded bg-white p-3 font-mono text-xs">{firstOutput}</pre></div>
@@ -438,6 +543,7 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
           <div className="mt-4 flex flex-wrap gap-2"><ExportReportButton title={title} data={report} /><button className="btn" onClick={() => navigator.clipboard?.writeText(textReport({ title, category, status, values, derived, notes }))}><FileText className="h-4 w-4" /> Copy text report</button><button className="btn" onClick={() => window.print()}>Print summary</button><button className="btn" onClick={async () => { await saveExperiment({ id: crypto.randomUUID(), algorithm: title, title: `${title} experiment`, createdAt: new Date().toISOString(), input: values, output: derived, steps: visualizers }); setSaved("Saved to IndexedDB"); }}>Save experiment</button></div>{saved && <p className="mt-3 text-sm font-semibold text-emerald-700">{saved}</p>}
         </section>
       )}
+      </ModulePageFrame>
     </div>
   );
 }

@@ -55,6 +55,17 @@ export default function RandomBytesGeneratorPage() {
       <Card title="Distribution by high nibble">
         <div className="grid gap-2 md:grid-cols-4 xl:grid-cols-8">{histogram.map((value, index) => <div key={index} className="rounded-md border border-slate-200 bg-slate-50 p-3"><div className="font-mono text-sm">{index.toString(16).toUpperCase()}x</div><div className="mt-2 h-2 rounded bg-slate-200"><div className="h-2 rounded bg-cyan-500" style={{ width: `${Math.min(100, (value / Math.max(1, bytes.length)) * 1600)}%` }} /></div><div className="mt-1 text-xs text-slate-500">{value}</div></div>)}</div>
       </Card>
+      <Card title="Where random bytes are used">
+        <div className="grid gap-3 md:grid-cols-4">
+          {["Encryption keys", "Nonces and IVs", "Salts", "Session tokens"].map((use) => <div key={use} className="rounded-md border border-teal-200 bg-teal-50 p-3 text-sm font-semibold text-teal-950">{use}</div>)}
+        </div>
+        <p className="mt-3 text-sm text-slate-700">Encryption needs unpredictable values so attackers cannot guess keys, replay nonces, precompute password tables, or forge random-looking tokens.</p>
+      </Card>
+      <Card title="Randomness graph">
+        <div className="flex h-36 items-end gap-1 rounded-md border border-slate-200 bg-slate-50 p-3">
+          {Array.from(bytes.slice(0, 64), (byte, index) => <div key={index} className="min-w-1 flex-1 rounded-t bg-cyan-500" style={{ height: `${Math.max(4, (byte / 255) * 100)}%` }} title={`${byte}`} />)}
+        </div>
+      </Card>
       <Card title="Learning notes and export">
         <WarningBadge>Use generated key material carefully. Anyone who sees these bytes can use them.</WarningBadge>
         <div className="mt-4"><ExportReportButton title="Random bytes" data={{ count, format, output }} /></div>

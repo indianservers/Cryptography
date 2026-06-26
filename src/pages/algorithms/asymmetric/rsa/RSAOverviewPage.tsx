@@ -17,6 +17,18 @@ export default function RSAOverviewPage() {
     const c = modPow(m, pub, mod);
     return { m, c, recovered: modPow(c, priv, mod), trace: modPowTrace(m, pub, mod) };
   }, [d, e, message, n]);
+  const loadTinyExample = () => {
+    setMessage("5");
+    setN("33");
+    setE("3");
+    setD("7");
+  };
+  const loadClassicExample = () => {
+    setMessage("65");
+    setN("3233");
+    setE("17");
+    setD("2753");
+  };
 
   return (
     <div className="space-y-6">
@@ -29,6 +41,10 @@ export default function RSAOverviewPage() {
             <Field label="Public exponent e"><input className="field font-mono" value={e} onChange={(event) => setE(event.target.value)} /></Field>
             <Field label="Private exponent d"><input className="field font-mono" value={d} onChange={(event) => setD(event.target.value)} /></Field>
           </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button className="btn btn-primary" type="button" onClick={loadTinyExample}>Start tiny: n=33</button>
+            <button className="btn" type="button" onClick={loadClassicExample}>Classic: n=3233</button>
+          </div>
         </Card>
         <Card title="RSA operation">
           <div className="space-y-3">
@@ -37,6 +53,21 @@ export default function RSAOverviewPage() {
           </div>
         </Card>
       </div>
+      <Card title="Public key and private key roles">
+        <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr]">
+          <div className="rounded-md border border-sky-200 bg-sky-50 p-4 text-sky-950">
+            <div className="text-xs font-semibold uppercase">Public key</div>
+            <div className="mt-2 font-mono text-sm">(e, n) = ({e}, {n})</div>
+            <p className="mt-2 text-sm">Everyone may know this. It locks the message into ciphertext.</p>
+          </div>
+          <div className="hidden items-center px-2 text-2xl font-semibold text-slate-400 md:flex">{"->"}</div>
+          <div className="rounded-md border border-violet-200 bg-violet-50 p-4 text-violet-950">
+            <div className="text-xs font-semibold uppercase">Private key</div>
+            <div className="mt-2 font-mono text-sm">(d, n) = ({d}, {n})</div>
+            <p className="mt-2 text-sm">Only the owner keeps this. It unlocks the ciphertext back to the message.</p>
+          </div>
+        </div>
+      </Card>
       <Card title="Modular exponentiation table">
         <table className="w-full overflow-hidden rounded-md border border-slate-200 text-sm"><thead className="bg-slate-100"><tr><th className="p-2 text-left">Exponent bit</th><th className="p-2 text-left">Base square</th><th className="p-2 text-left">Accumulated result</th></tr></thead><tbody>{values.trace.map((row, index) => <tr key={index} className="border-t border-slate-100"><td className="p-2 font-mono">{row.bit}</td><td className="p-2 font-mono">{row.base}</td><td className="p-2 font-mono">{row.result}</td></tr>)}</tbody></table>
       </Card>

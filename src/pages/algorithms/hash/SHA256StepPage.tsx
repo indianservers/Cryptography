@@ -10,6 +10,7 @@ export default function SHA256StepPage() {
   const [message, setMessage] = useState("abc");
   const [digest, setDigest] = useState("");
   const [roundLimit, setRoundLimit] = useState(16);
+  const [activeStage, setActiveStage] = useState(0);
   useEffect(() => {
     digestHex("SHA-256", message).then(setDigest).catch((error) => setDigest(error instanceof Error ? error.message : "SHA-256 failed"));
   }, [message]);
@@ -17,6 +18,7 @@ export default function SHA256StepPage() {
   const bitLength = bytes.length * 8;
   const trace = useMemo(() => sha256Trace(message), [message]);
   const avalanche = digest.slice(0, 16).split("").filter((char, index) => char !== digest.slice(16, 32)[index]).length * 4;
+  const stages = ["UTF-8 bytes", "Padding and length", "Message schedule", "Compression rounds", "Final digest"];
 
   return (
     <div className="space-y-6">
@@ -30,12 +32,25 @@ export default function SHA256StepPage() {
           <div className="space-y-3">
             <ValueRow label="SHA-256 digest" value={digest} />
             <ValueRow label="Message length" value={`${bytes.length} bytes / ${bitLength} bits`} />
+            <Field label={`Current step: ${stages[activeStage]}`}>
+              <input className="w-full" type="range" min="0" max={stages.length - 1} value={activeStage} onChange={(event) => setActiveStage(Number(event.target.value))} />
+            </Field>
           </div>
         </Card>
       </div>
+      <Card title="Final hash flow">
+        <div className="grid gap-2 md:grid-cols-5">
+          {stages.map((stage, index) => (
+            <button key={stage} type="button" onClick={() => setActiveStage(index)} className={`rounded-md border p-3 text-left text-sm ${index === activeStage ? "changed-byte border-amber-300 bg-amber-100 text-amber-950" : "border-slate-200 bg-slate-50"}`}>
+              <div className="font-mono text-xs">step {index + 1}</div>
+              <div className="font-semibold">{stage}</div>
+            </button>
+          ))}
+        </div>
+      </Card>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title="UTF-8 bytes and padding">
-          <MatrixView columns={8} values={trace.padded.slice(0, 64).map((byte) => byte.toString(16).padStart(2, "0"))} changed={[bytes.length]} />
+          <MatrixView columns={8} values={trace.padded.slice(0, 64).map((byte) => byte.toString(16).padStart(2, "0"))} active={activeStage <= 1 ? bytes.length : undefined} />
         </Card>
         <Card title="Constants K[0..7] preview">
           <MatrixView columns={4} values={sha256K.slice(0, 8).map((word) => word.toString(16).padStart(8, "0"))} />
@@ -46,7 +61,12 @@ export default function SHA256StepPage() {
       </Card>
       <Card title="64 compression rounds">
         <div className="overflow-auto rounded-md border border-slate-200">
-          <table className="w-full text-sm"><thead className="bg-slate-100"><tr><th className="p-2 text-left">i</th><th className="p-2 text-left">W</th><th className="p-2 text-left">K</th><th className="p-2 text-left">T1</th><th className="p-2 text-left">T2</th><th className="p-2 text-left">a</th><th className="p-2 text-left">e</th><th className="p-2 text-left">h</th></tr></thead><tbody>{trace.rounds.slice(0, roundLimit).map((round) => <tr key={round.i} className="border-t border-slate-100"><td className="p-2 font-mono">{round.i}</td><td className="p-2 font-mono">{round.w}</td><td className="p-2 font-mono">{round.k}</td><td className="p-2 font-mono">{round.t1}</td><td className="p-2 font-mono">{round.t2}</td><td className="p-2 font-mono">{round.a}</td><td className="p-2 font-mono">{round.e}</td><td className="p-2 font-mono">{round.h}</td></tr>)}</tbody></table>
+          <table className="w-full text-sm"><thead className="bg-slate-100"><tr><th className="p-2 text-left">i</th><th className="p-2 text-left">W</th><th className="p-2 text-left">K</th><th className="p-2 text-left">T1</th><th className="p-2 text-left">T2</th><th className="p-2 text-left">a</th><th className="p-2 text-left">e</th><th className="p-2 text-left">h</th></tr></thead><tbody>{trace.rounds.slice(0, roundLimit).map((round, index) => <tr key={round.i} className={`border-t border-slate-100 ${activeStage === 3 && index === roundLimit - 1 ? "bg-amber-50" : ""}`}><td className="p-2 font-mono">{round.i}</td><td className="p-2 font-mono">{round.w}</td><td className="p-2 font-mono">{round.k}</td><td className="p-2 font-mono">{round.t1}</td><td className="p-2 font-mono">{round.t2}</td><td className="p-2 font-mono">{round.a}</td><td className="p-2 font-mono">{round.e}</td><td className="p-2 font-mono">{round.h}</td></tr>)}</tbody></table>
+        </div>
+      </Card>
+      <Card title="Final digest animation">
+        <div className="grid gap-2 md:grid-cols-4">
+          {digest.match(/.{1,16}/g)?.map((chunk, index) => <div key={index} className={`rounded-md border p-3 font-mono text-xs ${activeStage === 4 ? "changed-byte border-amber-300 bg-amber-100 text-amber-950" : "border-slate-200 bg-slate-50"}`}>{chunk}</div>)}
         </div>
       </Card>
       <Card title="Compression functions">

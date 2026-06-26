@@ -45,12 +45,32 @@ export default function HMACPage() {
       </div>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title="Inner hash">
-          <ValueRow label="H((K xor ipad) || message) concept" value={inner} />
+          <div className="rounded-md border border-sky-200 bg-sky-50 p-3">
+            <ValueRow label="H((K xor ipad) || message) concept" value={inner} />
+          </div>
         </Card>
         <Card title="Outer hash">
-          <ValueRow label="H((K xor opad) || inner)" value={outer} />
+          <div className="rounded-md border border-violet-200 bg-violet-50 p-3">
+            <ValueRow label="H((K xor opad) || inner)" value={outer} />
+          </div>
         </Card>
       </div>
+      <Card title="HMAC block diagram">
+        <div className="grid gap-3 md:grid-cols-5">
+          {[
+            ["Key", "border-slate-200 bg-slate-50"],
+            ["K xor ipad", "border-sky-200 bg-sky-50 text-sky-950"],
+            ["Inner hash", "border-sky-300 bg-sky-100 text-sky-950"],
+            ["K xor opad", "border-violet-200 bg-violet-50 text-violet-950"],
+            ["Final tag", "border-violet-300 bg-violet-100 text-violet-950"],
+          ].map(([label, className], index) => (
+            <div key={label} className={`rounded-md border p-3 text-center text-sm font-semibold ${className}`}>
+              <div className="font-mono text-xs">#{index + 1}</div>
+              {label}
+            </div>
+          ))}
+        </div>
+      </Card>
       <WarningBadge>Keep the HMAC key secret and compare tags in constant time in production systems.</WarningBadge>
     </div>
   );

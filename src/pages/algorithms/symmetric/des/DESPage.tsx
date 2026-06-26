@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { PageHeader } from "../../../../components/common/PageHeader";
 import { Card, Field, ValueRow } from "../../../../components/common/Field";
 import { WarningBadge } from "../../../../components/common/WarningBadge";
@@ -26,6 +27,21 @@ export default function DESPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="DES Workbench" category="Symmetric Cryptography" status="Deprecated">A real DES-structure visualizer for the 64-bit block split, 48-bit expansion, round-key XOR, and S-box compression. DES is deprecated.</PageHeader>
+      <Card title="Overall DES flow">
+        <div className="grid gap-2 md:grid-cols-5">
+          {["Initial permutation", "16 Feistel rounds", "L/R swap", "Final permutation", "Ciphertext"].map((step, index) => (
+            <div key={step} className={`rounded-md border p-3 text-center text-sm ${index === 1 ? "changed-byte border-amber-300 bg-amber-100 text-amber-950" : "border-slate-200 bg-slate-50"}`}>
+              <div className="font-mono text-xs">#{index + 1}</div>
+              <div className="font-semibold">{step}</div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link className="btn btn-primary" to="/algorithms/symmetric/des-full-step">Open guided 16-round walkthrough</Link>
+          <Link className="btn" to="/algorithms/symmetric/des-key-schedule">Key schedule</Link>
+          <Link className="btn" to="/algorithms/symmetric/des-sbox">S-box explorer</Link>
+        </div>
+      </Card>
       <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
         <Card title="64-bit block and key">
           <div className="grid gap-4">

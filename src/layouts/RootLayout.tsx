@@ -2,6 +2,7 @@ import { Component, Suspense, useEffect, useMemo, useRef, useState, type ErrorIn
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { ArrowUp, BookOpen, Box, Braces, Calculator, ChartBar, ChevronDown, Cpu, Database, FileKey, Fingerprint, Gauge, Hash, KeyRound, Layers, LockKeyhole, Menu, Network, Search, Shield, Shuffle, SquareCode, Waves, X, Zap } from "lucide-react";
 import { navigationCategories, navigationItems, navigationSections } from "../data/navigation";
+import { findAlgorithm } from "../data/algorithmMetadata";
 import { SecurityStatusBadge } from "../components/common/SecurityStatusBadge";
 import { ImplementationBadge } from "../components/common/ImplementationBadge";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
@@ -94,6 +95,8 @@ const highlightMatch = (label: string, query: string) => {
   );
 };
 
+const implementationLabel = (status?: string) => status === "Real" ? "Implemented" : status === "Substitute" ? "Placeholder" : status ?? "Placeholder";
+
 class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
 
@@ -133,13 +136,20 @@ export default function RootLayout() {
   const activeItemRef = useRef<HTMLAnchorElement | null>(null);
 
   const currentItem = useMemo(() => navigationItems.find((item) => item.route === location.pathname), [location.pathname]);
+  const currentAlgorithm = useMemo(() => findAlgorithm(location.pathname), [location.pathname]);
+  const learnNext = useMemo(() => {
+    if (!currentAlgorithm) return [];
+    return navigationItems
+      .filter((item) => item.route !== currentAlgorithm.route && (item.category === currentAlgorithm.category || item.securityStatus === currentAlgorithm.securityStatus))
+      .slice(0, 4);
+  }, [currentAlgorithm]);
   const pageTitle = currentItem?.label ?? "Home";
   const totalResults = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return navigationItems.length;
     return navigationItems.filter((item) => {
       const display = categoryDisplay[item.category] ?? item.category;
-      return item.label.toLowerCase().includes(normalized) || item.securityStatus.toLowerCase().includes(normalized) || display.toLowerCase().includes(normalized) || item.category.toLowerCase().includes(normalized);
+      return item.label.toLowerCase().includes(normalized) || item.securityStatus.toLowerCase().includes(normalized) || implementationLabel(item.implementationStatus).toLowerCase().includes(normalized) || display.toLowerCase().includes(normalized) || item.category.toLowerCase().includes(normalized);
     }).length;
   }, [query]);
   const recentItems = useMemo(() => recentRoutes.map((route) => navigationItems.find((item) => item.route === route)).filter(Boolean).slice(0, 5), [recentRoutes]);
@@ -150,7 +160,7 @@ export default function RootLayout() {
       category,
       items: navigationItems.filter((item) => {
         const display = categoryDisplay[item.category] ?? item.category;
-        return item.category === category && (!normalized || item.label.toLowerCase().includes(normalized) || item.securityStatus.toLowerCase().includes(normalized) || display.toLowerCase().includes(normalized) || item.category.toLowerCase().includes(normalized));
+        return item.category === category && (!normalized || item.label.toLowerCase().includes(normalized) || item.securityStatus.toLowerCase().includes(normalized) || implementationLabel(item.implementationStatus).toLowerCase().includes(normalized) || display.toLowerCase().includes(normalized) || item.category.toLowerCase().includes(normalized));
       }),
     })).filter((group) => group.items.length > 0);
   }, [query]);
@@ -313,7 +323,9 @@ export default function RootLayout() {
                     <div className={`grid transition-[grid-template-rows] duration-150 ease-out ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
                       <div className="min-h-0 overflow-hidden">
                         <div className="mt-1 space-y-1 pl-3">
-                        {items.map((item) => (
+                        {items.map((item) => {
+                          const categoryLabel = categoryDisplay[item.category] ?? item.category;
+                          return (
                           <NavLink
                             key={item.route}
                             to={item.route}
@@ -323,13 +335,17 @@ export default function RootLayout() {
                             }}
                             className={({ isActive }) => `flex min-h-10 items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm transition ${isActive ? "border-teal-700 bg-teal-700 text-white shadow-sm" : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"}`}
                           >
-                            <span className="truncate">{highlightMatch(item.label, query)}</span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate">{highlightMatch(item.label, query)}</span>
+                              {query && <span className="block truncate text-[10px] font-medium opacity-80">{highlightMatch(`${categoryLabel} / ${item.securityStatus} / ${implementationLabel(item.implementationStatus)}`, query)}</span>}
+                            </span>
                             <span className="flex shrink-0 items-center gap-1">
                               <ImplementationBadge status={item.implementationStatus ?? "Substitute"} compact />
                               <SecurityStatusBadge status={item.securityStatus} compact />
                             </span>
                           </NavLink>
-                        ))}
+                        );
+                        })}
                         </div>
                       </div>
                     </div>
@@ -352,7 +368,7 @@ export default function RootLayout() {
             <Link className="btn px-3" to="/">Home</Link>
           </div>
         </div>
-        <div className="mx-auto max-w-7xl px-3 pb-4 pt-14 sm:px-6 sm:py-6 lg:px-8">
+        <div className="mx-auto max-w-[96rem] px-3 pb-4 pt-14 sm:px-6 sm:py-6 lg:px-8">
           <PrivacyBanner />
           <TopAlgorithmsMenu />
           <Breadcrumbs />
@@ -362,6 +378,30 @@ export default function RootLayout() {
               <Outlet />
             </Suspense>
           </PageErrorBoundary>
+          {currentAlgorithm && (
+            <section className="mt-8 rounded-md border border-teal-200 bg-teal-50 p-4 text-sm text-teal-950 shadow-sm">
+              <div className="text-xs font-bold uppercase tracking-wide text-teal-800">Page-end summary</div>
+              <p className="mt-2">
+                {currentAlgorithm.label} starts with {currentAlgorithm.inputs[0]?.toLowerCase() ?? "input"},
+                shows {currentAlgorithm.visualizers[0]?.toLowerCase() ?? "the main transformation"},
+                and ends with {currentAlgorithm.outputs[0]?.toLowerCase() ?? "a result"}.
+              </p>
+              {currentAlgorithm.notes[0] && <p className="mt-2 font-medium">{currentAlgorithm.notes[0]}</p>}
+            </section>
+          )}
+          {learnNext.length > 0 && (
+            <section className="mt-4 rounded-md border border-slate-200 bg-white p-4 text-sm shadow-sm">
+              <div className="text-xs font-bold uppercase tracking-wide text-slate-600">What to Learn Next</div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                {learnNext.map((item) => (
+                  <Link key={item.route} to={item.route} className="rounded-md border border-slate-200 bg-slate-50 p-3 transition hover:border-teal-300 hover:bg-teal-50">
+                    <div className="font-semibold text-slate-900">{item.label}</div>
+                    <div className="mt-1 text-xs text-slate-600">{categoryDisplay[item.category] ?? item.category}</div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
           <footer className="mt-10 border-t border-slate-200 py-4 text-xs text-slate-500">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <div>

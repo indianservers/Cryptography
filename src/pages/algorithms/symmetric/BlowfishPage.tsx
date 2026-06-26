@@ -20,6 +20,7 @@ export default function BlowfishPage() {
   const [mode, setMode] = useState<"ECB" | "CBC">("CBC");
   const [padding, setPadding] = useState<PaddingName>("PKCS5");
   const [iv, setIv] = useState("bfish iv");
+  const [activeRound, setActiveRound] = useState(1);
   const result = useMemo(() => {
     try {
       const cipher = new Blowfish(key, Blowfish.MODE[mode], paddingValue(padding));
@@ -61,6 +62,25 @@ export default function BlowfishPage() {
           <ValueRow label="Mode shown" value={mode} />
         </div>
         <p className="mt-4 text-sm text-slate-700">Blowfish is a real Feistel block cipher. This page delegates the official P-array/S-box math to a browser-bundled library, while the UI exposes block size, padding, IV behavior, and round-trip verification.</p>
+      </Card>
+      <Card title="Round picture">
+        <div className="grid gap-4 xl:grid-cols-[14rem_1fr]">
+          <Field label={`Active round: ${activeRound}`}>
+            <input type="range" min="1" max="16" value={activeRound} onChange={(event) => setActiveRound(Number(event.target.value))} className="w-full" />
+          </Field>
+          <div className="grid gap-2 sm:grid-cols-4 lg:grid-cols-8">
+            {Array.from({ length: 16 }, (_, index) => {
+              const round = index + 1;
+              return (
+                <div key={round} className={`rounded-md border p-3 text-center ${round === activeRound ? "changed-byte border-amber-300 bg-amber-100 text-amber-950" : "border-slate-200 bg-slate-50"}`}>
+                  <div className="text-xs font-semibold uppercase">Round {round}</div>
+                  <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-1 font-mono text-xs"><span>L</span><span>F</span><span>R</span></div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <p className="mt-4 text-sm text-slate-700">Only the selected round is highlighted so the 16-round Feistel flow is easier to follow: one side enters F, the result mixes with the other side, then the halves swap.</p>
       </Card>
       <WarningBadge>Blowfish is legacy because 64-bit blocks collide too quickly for large data volumes. Use AES-GCM or ChaCha20-Poly1305 for new designs.</WarningBadge>
     </div>

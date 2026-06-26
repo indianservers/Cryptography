@@ -34,6 +34,18 @@ export default function MD5Page() {
       <Card title="512-bit block after MD5 padding">
         <MatrixView columns={8} values={paddedBytes} changed={[new TextEncoder().encode(message).length]} />
       </Card>
+      <Card title="Why MD5 is outdated">
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-md border border-rose-200 bg-rose-50 p-4 text-rose-950">
+            <div className="text-xs font-semibold uppercase">Collision attacks are practical</div>
+            <p className="mt-2 text-sm">Attackers can create different files that share the same MD5 digest, so MD5 cannot reliably prove that content is unchanged.</p>
+          </div>
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-950">
+            <div className="text-xs font-semibold uppercase">Famous failure</div>
+            <p className="mt-2 text-sm">In 2008, researchers demonstrated a rogue certificate authority certificate using an MD5 collision, showing why MD5 was unsafe for certificates and signatures.</p>
+          </div>
+        </div>
+      </Card>
       <Card title="Round operations">
         <div className="overflow-auto rounded-md border border-slate-200">
           <table className="w-full text-sm">
