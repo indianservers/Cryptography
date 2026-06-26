@@ -63,18 +63,27 @@ Add focused animations where motion explains the algorithm: shifting letters, AE
 
 P3 modules include good custom pages such as Diffie-Hellman, RSA overview/encryption/decryption/key generation/signature, Caesar, Vigenere, Base64, Binary, Hex, HMAC, PBKDF2, SHA-2, SHA-3, math modules, AES workbench, AES step visualizers, DES S-box, random bytes, test vectors, benchmark, and entropy analyzer.
 
+Status: implemented as shared animation step helpers, reduced-motion aware playback hooks, reusable visual components, and route-driven animation content for the Phase 5 minimum priority set.
+
 Acceptance criteria:
 
 - Animations have replay controls.
 - Current step is highlighted without relying only on color.
 - Reduced-motion users still get the same information.
+- Minimum Phase 5 priority routes have animation content.
+- Animation content has tests for step completeness, reduced-motion summaries, conceptual boundaries, and unsafe overclaims.
 
 ## Phase 6 - Guided Mode and Final QA
 
 Add guided mode, challenge mode, quizzes, export/share polish, full route smoke checks, official vector expansion, and manual browser QA.
+
+Status: implemented as route-driven guided lessons, safe local challenges, export-risk classification, final QA matrix, browser-smoke scaffold, certification documents, and final release reports.
 
 Acceptance criteria:
 
 - All exact claims are backed by tests or Web Crypto.
 - All routes render in desktop and mobile viewports.
 - Known limitations are documented per module.
+- Guided and challenge content have regression tests.
+- Export/copy safety has secret-risk and redaction tests.
+- Final release certification documents are present.

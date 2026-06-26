@@ -17,6 +17,9 @@ import {
 } from "../../lib/auditStatus";
 import { SafetyBoundaryCard } from "./SafetyBoundaryCard";
 import { ModuleLearningSection } from "./ModuleLearningSection";
+import { ModuleAnimationSection } from "./ModuleAnimationSection";
+import { GuidedModePanel } from "./GuidedModePanel";
+import { ChallengeModePanel } from "./ChallengeModePanel";
 
 const categoryTone = (category: string) => {
   if (/symmetric|block/i.test(category)) return "border-teal-200 bg-teal-50 text-teal-800";
@@ -247,6 +250,9 @@ export function PageHeader({ title, category, status, children }: { title: strin
         />
       )}
       <ModuleLearningSection route={route} />
+      <ModuleAnimationSection route={route} />
+      <GuidedModePanel route={route} />
+      <ChallengeModePanel route={route} />
       <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_1fr_1.2fr]">
         <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
           <div className="text-xs font-semibold uppercase text-slate-500">Key inputs</div>

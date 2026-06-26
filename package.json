@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:vectors": "vitest run tests/algorithm-vectors.test.ts",
     "test:smoke": "vitest run tests/route-smoke.spec.ts",
+    "test:browser": "vitest run tests/browser-route-smoke.spec.ts",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {

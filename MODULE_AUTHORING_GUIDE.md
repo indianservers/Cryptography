@@ -89,6 +89,70 @@ Accessibility checklist:
 - Add table captions or nearby labels where feasible.
 - Reduced-motion users must retain the same information.
 
+## Phase 5 Animation Rules
+
+Animate only when motion teaches cause and effect. Good animation candidates include letter shifts, byte grouping, block flow, key exchange, matrix transforms, hash absorb/compress/squeeze flow, tree construction, modular wraparound, and distribution changes.
+
+Do not animate:
+
+- Decorative background motion.
+- Full brute-force loops or large tables.
+- Real offensive workflows.
+- Production secret handling.
+- Anything that implies a conceptual page is exact.
+
+Required for every route animation:
+
+- Add content in `src/data/moduleAnimationContent.ts`.
+- Provide at least three ordered steps.
+- Provide a `reducedMotionSummary`.
+- Show current-step narration near the visual.
+- Use `StepPlaybackControls` for replay and step navigation.
+- Support reduced motion through `usePrefersReducedMotion` and `useAnimationSequence`.
+- Keep text labels for current nodes, cells, bars, mappings, or matrix entries.
+- Use a safety or exactness note when the audit registry marks the route conceptual, hybrid, deferred, deprecated, unsafe, or secret-sensitive.
+
+Performance rules:
+
+- Keep arrays small and sample-based.
+- Use CSS transitions and state-driven rendering.
+- Do not add large animation libraries.
+- Do not run cryptographic computations just for animation.
+- For large inputs, animate a representative subset and keep final output in `OutputPanel`.
+
+## Phase 6 Guided, Challenge, Export, And QA Rules
+
+Guided content:
+
+- Add route lessons in `src/data/moduleGuidedContent.ts`.
+- Each lesson needs at least three steps.
+- Each step must include an instruction, learner action, and expected observation.
+- Use sample values only.
+- Attack lessons must end with defensive mitigation, not operational misuse.
+
+Challenge content:
+
+- Add safe local challenges in `src/data/moduleChallenges.ts`.
+- Use multiple-choice or short educational answers.
+- Never require real private keys, passwords, certificates, wallets, tokens, or external targets.
+- Conceptual pages should ask conceptual interpretation questions only.
+- Attack challenges must be defensive and bounded.
+
+Export safety:
+
+- Use `src/lib/exportSafety.ts` for copy/export classification.
+- Redact secret-like values by default.
+- Secret-risk values must warn before copying or exporting.
+- Conceptual/deferred exports must include an exactness note.
+- Deprecated/unsafe exports must include a safety note.
+
+Final QA:
+
+- Keep `src/data/finalQAChecklist.ts` passing for all navigation routes.
+- Add browser-smoke routes to `src/data/browserSmokeRoutes.ts`.
+- Keep `test:browser` as the scaffold for representative render checks until full Playwright coverage is added.
+- Release reports must state what the app can and cannot claim.
+
 ## Registry Rules
 
 Each route must have an entry in `moduleAuditRegistry` with:
