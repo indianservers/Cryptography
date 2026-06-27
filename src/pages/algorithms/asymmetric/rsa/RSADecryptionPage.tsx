@@ -45,6 +45,16 @@ export default function RSADecryptionPage() {
         </Card>
       </div>
       {result.ok && (
+        <Card title="Decryption flow with encryption result kept visible">
+          <div className="grid gap-3 text-sm md:grid-cols-4">
+            <div className="rounded-md border-2 border-emerald-300 bg-emerald-50 p-3"><p className="text-xs font-semibold uppercase text-emerald-700">Ciphertext from encryption</p><p className="mt-1 font-mono text-lg font-bold">{result.cValue.toString()}</p></div>
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3"><p className="text-xs font-semibold uppercase text-slate-500">Private key</p><p className="mt-1 font-mono">d={result.dValue}<br />n={result.nValue}</p></div>
+            <div className="rounded-md border border-slate-200 bg-white p-3"><p className="text-xs font-semibold uppercase text-slate-500">Formula</p><p className="mt-1 font-mono">c^d mod n</p></div>
+            <div className="rounded-md border-2 border-cyan-300 bg-cyan-50 p-3"><p className="text-xs font-semibold uppercase text-cyan-700">Recovered message</p><p className="mt-1 font-mono text-lg font-bold">{result.message.toString()}</p></div>
+          </div>
+        </Card>
+      )}
+      {result.ok && (
         <Card title="Private exponentiation trace">
           <div className="overflow-auto rounded-md border border-slate-200">
             <table className="w-full text-sm">

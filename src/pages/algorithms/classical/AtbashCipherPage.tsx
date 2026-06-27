@@ -59,8 +59,17 @@ export default function AtbashCipherPage() {
       </div>
       <Card title="Normal and reversed alphabets">
         <div className="space-y-2 font-mono text-sm">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wide text-slate-500">
+            <span>Normal alphabet stays visible</span>
+            <span>Selected letter mirrors downward</span>
+          </div>
           <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(26, minmax(1.5rem, 1fr))" }}>{ALPHA.split("").map((letter) => <span key={letter} className={`rounded border px-1 py-2 text-center ${letter === activeChar.toUpperCase() ? "changed-byte border-amber-300 bg-amber-100 text-amber-950" : "border-slate-200 bg-slate-50"}`}>{letter}</span>)}</div>
+          <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(26, minmax(1.5rem, 1fr))" }}>{ALPHA.split("").map((letter, index) => <span key={`line-${letter}`} className={`h-4 border-x text-center ${letter === activeChar.toUpperCase() || ALPHA[25 - index] === activeOut.toUpperCase() ? "border-amber-400" : "border-slate-200"}`} />)}</div>
           <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(26, minmax(1.5rem, 1fr))" }}>{ALPHA.split("").reverse().map((letter) => <span key={letter} className={`rounded border px-1 py-2 text-center ${letter === activeOut.toUpperCase() ? "changed-byte border-amber-300 bg-amber-100 text-amber-950" : "border-slate-200 bg-slate-50"}`}>{letter}</span>)}</div>
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wide text-slate-500">
+            <span>Reversed alphabet stays visible</span>
+            <span>{/[a-z]/i.test(activeChar) ? `${activeChar.toUpperCase()} becomes ${activeOut.toUpperCase()}` : "Non-letters pass through"}</span>
+          </div>
         </div>
       </Card>
       <Card title="One letter at a time">

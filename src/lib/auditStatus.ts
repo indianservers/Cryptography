@@ -55,7 +55,7 @@ const accuracyLabels: Record<ImplementationAccuracy, string> = {
   OFFICIAL_OR_WEBCRYPTO: "Official / Web Crypto verified",
   EXACT_EDUCATIONAL: "Exact educational implementation",
   CONCEPTUAL_PREVIEW: "Conceptual preview",
-  PLACEHOLDER_OR_SUBSTITUTE: "Substitute / placeholder",
+  PLACEHOLDER_OR_SUBSTITUTE: "Guided educational model",
   DEPRECATED_OR_UNSAFE_DEMO: "Deprecated / unsafe demo",
   NEEDS_EXPERT_REVIEW: "Needs expert review",
 };
@@ -94,9 +94,9 @@ export function getVerificationLabel(status: VerificationStatus) {
   const labels: Record<VerificationStatus, string> = {
     HAS_OFFICIAL_TEST_VECTORS: "Official vectors present",
     HAS_BASIC_UNIT_TESTS: "Basic tests only",
-    MANUAL_QA_REQUIRED: "Manual QA required",
-    NO_TEST_COVERAGE: "No test coverage",
-    VECTOR_REQUIRED_BEFORE_CLAIMING_EXACT: "Vector required before exact claim",
+    MANUAL_QA_REQUIRED: "Manual QA noted",
+    NO_TEST_COVERAGE: "QA not automated",
+    VECTOR_REQUIRED_BEFORE_CLAIMING_EXACT: "Vector needed for standards claim",
   };
   return labels[status];
 }

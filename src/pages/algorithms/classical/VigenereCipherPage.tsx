@@ -49,11 +49,13 @@ export default function VigenereCipherPage() {
           <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
             <div className="text-xs font-semibold uppercase text-amber-800">Active step</div>
             <div className="mt-2 font-mono text-xl">{active?.char || " "} {"+"} {active?.key || "-"} {"->"} {active?.out || " "}</div>
+            {active?.key && <div className="mt-3 rounded-md border border-amber-300 bg-white p-3 text-sm text-amber-950"><span className="font-semibold">Key letter in use:</span> <span className="font-mono text-lg font-bold">{active.key}</span> means shift by {active.shift}.</div>}
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
             <div className="text-xs font-semibold uppercase text-slate-500">Shift formula</div>
-            <div className="mt-2 font-mono text-sm">{formula}</div>
-            <div className="mt-3 flex flex-wrap gap-1 font-mono text-xs">{rows.map((row, index) => <span key={row.index} className={`rounded border px-2 py-1 ${index === activeRow ? "changed-byte border-amber-300 bg-amber-100 text-amber-950" : row.key ? "border-slate-200 bg-white" : "border-slate-100 bg-slate-100 text-slate-400"}`}>{row.key || "-"}</span>)}</div>
+            <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 p-3 font-mono text-sm text-blue-950">{formula}</div>
+            <div className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Repeated key aligned with message</div>
+            <div className="mt-2 flex flex-wrap gap-1 font-mono text-xs">{rows.map((row, index) => <span key={row.index} title={row.key ? `Plain ${row.char} uses key ${row.key}` : "No key letter used for spaces/punctuation"} className={`rounded border px-2 py-1 ${index === activeRow ? "changed-byte border-amber-400 bg-amber-100 text-amber-950 ring-2 ring-amber-300" : row.key ? "border-slate-200 bg-white" : "border-slate-100 bg-slate-100 text-slate-400"}`}>{row.key || "-"}</span>)}</div>
           </div>
         </div>
       </Card>
@@ -61,7 +63,7 @@ export default function VigenereCipherPage() {
         <div className="overflow-auto rounded-md border border-slate-200">
           <table className="w-full text-sm">
             <thead className="bg-slate-100"><tr><th className="p-2 text-left">Index</th><th className="p-2 text-left">Plain</th><th className="p-2 text-left">Key</th><th className="p-2 text-left">Shift</th><th className="p-2 text-left">Cipher</th></tr></thead>
-            <tbody>{rows.map((row, index) => <tr key={row.index} className={`border-t border-slate-100 ${index === activeRow ? "bg-amber-50" : ""}`}><td className="p-2 font-mono">{row.index}</td><td className="p-2 font-mono">{row.char}</td><td className="p-2 font-mono">{row.key}</td><td className="p-2 font-mono">{row.shift}</td><td className="p-2 font-mono">{row.out}</td></tr>)}</tbody>
+            <tbody>{rows.map((row, index) => <tr key={row.index} className={`border-t border-slate-100 ${index === activeRow ? "bg-amber-50 ring-2 ring-inset ring-amber-300" : ""}`}><td className="p-2 font-mono">{row.index}</td><td className="p-2 font-mono">{row.char}</td><td className={`p-2 font-mono ${index === activeRow ? "bg-amber-100 font-bold text-amber-950" : ""}`}>{row.key}</td><td className="p-2 font-mono">{row.shift}</td><td className="p-2 font-mono">{row.out}</td></tr>)}</tbody>
           </table>
         </div>
       </Card>

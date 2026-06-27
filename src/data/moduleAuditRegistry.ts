@@ -341,7 +341,7 @@ function riskFor(accuracy: ImplementationAccuracy, security: SecurityUseStatus) 
   if (security === "SECRET_INPUT_RISK") return "Users may paste real secrets or misunderstand exported/local material.";
   if (security === "ATTACK_CONCEPT_ONLY") return "Attack demo must remain bounded to authorized learning and avoid operational misuse.";
   if (accuracy === "NEEDS_EXPERT_REVIEW") return "Standards-heavy page can appear more exact than the current verification supports.";
-  if (accuracy === "PLACEHOLDER_OR_SUBSTITUTE") return "Substitute output could be mistaken for a standards-compliant result.";
+  if (accuracy === "PLACEHOLDER_OR_SUBSTITUTE") return "Guided model output could be mistaken for a standards-compliant result.";
   if (security === "DEPRECATED" || security === "UNSAFE") return "Learners may miss that the primitive is unsafe for real protection.";
   return "Needs routine vector coverage, manual QA, and clearer learning checkpoints.";
 }

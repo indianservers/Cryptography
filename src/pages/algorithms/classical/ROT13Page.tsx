@@ -53,13 +53,19 @@ export default function ROT13Page() {
         </div>
       </Card>
       <Card title="ROT13 beside Caesar shift 13">
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 lg:grid-cols-4">
           <ValueRow label="Original text" value={text} />
-          <ValueRow label="Caesar +13" value={caesar(text, 13)} />
-          <ValueRow label="ROT13 again" value={roundTrip} />
+          <ValueRow label="Caesar cipher with shift 13" value={caesar(text, 13)} />
+          <ValueRow label="ROT13 encoded" value={encoded} />
+          <ValueRow label="ROT13 applied twice" value={roundTrip} />
         </div>
-        <div className="mt-4 rounded-md border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">
-          ROT13 is not a different algorithm from Caesar here: it is Caesar with a fixed shift of 13. Because the alphabet has 26 letters, applying the same shift twice lands back at the start.
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <div className="rounded-md border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">
+            ROT13 is Caesar with one fixed rule: always shift by 13. Caesar lets you choose any shift from 0 to 25.
+          </div>
+          <div className="changed-byte rounded-md border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-950">
+            Exam fact: applying ROT13 twice gives back the original text because 13 + 13 = 26, a full alphabet turn.
+          </div>
         </div>
       </Card>
       <WarningBadge>ROT13 provides zero secrecy: any reader can decode it instantly. Use it only to obscure spoilers or trivia, never to protect data.</WarningBadge>

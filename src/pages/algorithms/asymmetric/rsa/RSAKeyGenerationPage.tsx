@@ -118,6 +118,7 @@ export default function RSAKeyGenerationPage() {
       </Card>
       <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
         <Card title="Educational toy prime inputs" eyebrow="Small-number math" defaultOpen={false}>
+          <p className="mb-3 text-sm text-slate-600">RSA starts with primes because multiplying them is easy, but factoring the large product n back into p and q is hard.</p>
           <div className="grid gap-3 md:grid-cols-3">
             <Field label="p"><input className="field font-mono" value={p} onChange={(event) => setP(event.target.value)} /></Field>
             <Field label="q"><input className="field font-mono" value={q} onChange={(event) => setQ(event.target.value)} /></Field>
@@ -133,6 +134,11 @@ export default function RSAKeyGenerationPage() {
           </div>
         </Card>
       </div>
+      <Card title="Toy key generation sequence" defaultOpen={false}>
+        <div className="grid gap-2 text-sm md:grid-cols-5">
+          {[["1. primes", `p=${values.primeP}, q=${values.primeQ}`], ["2. modulus", `n=${values.n}`], ["3. totient", `phi=${values.phi}`], ["4. public exponent", `e=${values.exponent}`], ["5. private exponent", values.d ? `d=${values.d}` : "choose coprime e"]].map(([label, value], index) => <div key={label} className={`rounded-md border p-3 ${index === 4 ? "border-cyan-300 bg-cyan-50" : "border-slate-200 bg-slate-50"}`}><p className="text-xs font-semibold uppercase text-slate-500">{label}</p><p className="mt-1 break-all font-mono font-bold text-slate-950">{value}</p></div>)}
+        </div>
+      </Card>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title="Toy public key" defaultOpen={false}><ValueRow label="(n, e)" value={`(${values.n}, ${values.exponent})`} /></Card>
         <Card title="Toy private key" defaultOpen={false}><ValueRow label="(n, d)" value={values.d ? `(${values.n}, ${values.d})` : "invalid until gcd(e, phi) = 1"} /></Card>

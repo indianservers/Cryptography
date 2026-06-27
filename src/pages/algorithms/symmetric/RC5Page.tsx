@@ -12,6 +12,10 @@ const rotatePreview = (value: number, amount: number) => {
   const shift = amount & 31;
   return shift === 0 ? bits : bits.slice(shift) + bits.slice(0, shift);
 };
+const splitBits = (bits: string, amount: number) => {
+  const shift = amount & 31;
+  return shift === 0 ? { moving: "", remaining: bits } : { moving: bits.slice(0, shift), remaining: bits.slice(shift) };
+};
 
 export default function RC5Page() {
   const [block, setBlock] = useState("RC5 data");
@@ -21,6 +25,8 @@ export default function RC5Page() {
   const [activeTrace, setActiveTrace] = useState(1);
   const result = useMemo(() => operation === "encrypt" ? rc5EncryptBlock(asciiToHex(block, 8), asciiToHex(key, 16), rounds) : rc5DecryptBlock(asciiToHex(block, 8), asciiToHex(key, 16), rounds), [block, key, operation, rounds]);
   const activeRow = result.trace[Math.min(activeTrace, result.trace.length - 1)] ?? result.trace[0];
+  const aBits = wordBits(activeRow?.a ?? 0);
+  const aSplit = splitBits(aBits, activeRow?.rotationA ?? 0);
 
   return (
     <div className="space-y-6">
@@ -53,7 +59,8 @@ export default function RC5Page() {
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
               <div className="text-xs font-semibold uppercase text-slate-500">Operation now</div>
-              <div className="mt-1 font-semibold">{operation === "encrypt" ? "XOR, rotate left, then add subkey" : "Subtract subkey, rotate right, then XOR"}</div>
+              <div className="mt-1 font-semibold">{operation === "encrypt" ? "XOR -> Rotation -> Addition" : "Subtraction -> Rotation -> XOR"}</div>
+              <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 p-2 text-xs font-semibold text-blue-900">{operation === "encrypt" ? "Current focus: data-dependent rotate left, then add the subkey." : "Current focus: subtract the subkey, rotate right, then undo XOR."}</div>
             </div>
             <ValueRow label="A rotation amount" value={String(activeRow?.rotationA ?? 0)} />
             <ValueRow label="B rotation amount" value={String(activeRow?.rotationB ?? 0)} />
@@ -62,9 +69,10 @@ export default function RC5Page() {
         <div className="mt-4 grid gap-3 xl:grid-cols-2">
           <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
             <div className="mb-2 text-xs font-semibold uppercase text-amber-800">A word rotation preview</div>
-            <div className="font-mono text-xs break-all">{wordBits(activeRow?.a ?? 0)}</div>
+            <div className="font-mono text-xs break-all"><span className="rounded bg-amber-200 px-1 font-bold text-amber-950">{aSplit.moving}</span>{aSplit.remaining}</div>
             <div className="my-2 text-center font-semibold">rotate by {activeRow?.rotationA ?? 0}</div>
-            <div className="font-mono text-xs break-all">{rotatePreview(activeRow?.a ?? 0, activeRow?.rotationA ?? 0)}</div>
+            <div className="font-mono text-xs break-all">{aSplit.remaining}<span className="changed-byte rounded bg-teal-200 px-1 font-bold text-teal-950">{aSplit.moving}</span></div>
+            <p className="mt-2 text-xs text-amber-950">Highlighted left bits wrap around to the right side during rotation.</p>
           </div>
           <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
             <div className="mb-2 text-xs font-semibold uppercase text-amber-800">B word rotation preview</div>

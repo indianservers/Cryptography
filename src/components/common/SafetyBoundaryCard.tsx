@@ -29,7 +29,7 @@ export function SafetyBoundaryCard({
     attackConcept && "Attack concept for authorized learning only. Do not target systems or data you do not own.",
     secretInputRisk && "Do not paste real private keys, wallet secrets, passwords, tokens, certificates, or production secrets.",
     productionNotAllowed && "Do not use this browser demo as production security code.",
-    vectorVerificationPending && "Official vector verification is still required before this page can claim exactness.",
+    vectorVerificationPending && "This live page uses a bounded learning model unless official standards vectors are shown.",
   ].filter(Boolean) as string[];
 
   if (!items.length) return null;

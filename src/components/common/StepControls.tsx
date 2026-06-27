@@ -11,13 +11,22 @@ export function StepControls({ step, max, onStep }: { step: number; max: number;
     }, Math.max(150, 1200 - speed * 180));
     return () => window.clearInterval(interval);
   }, [max, onStep, playing, speed, step]);
+  useEffect(() => {
+    const replay = () => {
+      setPlaying(false);
+      onStep(0);
+      window.setTimeout(() => setPlaying(true), 0);
+    };
+    window.addEventListener("algorithm-replay", replay);
+    return () => window.removeEventListener("algorithm-replay", replay);
+  }, [onStep]);
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-slate-50 p-3">
       <button className="icon-btn" onClick={() => onStep(Math.max(0, step - 1))} title="Previous step"><SkipBack /></button>
       <button className="icon-btn" onClick={() => onStep(Math.min(max, step + 1))} title="Next step"><SkipForward /></button>
       <button className="icon-btn" onClick={() => setPlaying(true)} title="Auto play"><Play /></button>
       <button className="icon-btn" onClick={() => setPlaying(false)} title="Pause"><Pause /></button>
-      <button className="icon-btn" onClick={() => { setPlaying(false); onStep(0); }} title="Reset"><RotateCcw /></button>
+      <button className="btn" onClick={() => { setPlaying(false); onStep(0); window.setTimeout(() => setPlaying(true), 0); }} title="Replay from the first step"><RotateCcw className="h-4 w-4" /> Replay</button>
       <label className="ml-2 text-sm text-slate-600">Animation speed <input type="range" min="1" max="5" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} className="align-middle" /></label>
       {playing && <span className="rounded-full bg-cyan-100 px-2 py-1 text-xs font-semibold text-cyan-800">Playing</span>}
       <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-800">{Math.max(0, max - step)} remaining</span>

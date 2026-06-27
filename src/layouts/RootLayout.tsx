@@ -9,6 +9,7 @@ import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { PrivacyBanner } from "../components/common/PrivacyBanner";
 import { PageChrome } from "../components/common/PageChrome";
 import { TopAlgorithmsMenu } from "../components/common/TopAlgorithmsMenu";
+import { AlgorithmLearningFooter } from "../components/common/AlgorithmLearningScaffold";
 
 const icons = { Shield, BookOpen, LockKeyhole, Waves, KeyRound, Fingerprint, Hash, FileKey, Database, Network, ChartBar, Zap, Box, Layers, SquareCode, Braces, Shuffle, Gauge, Cpu, Calculator };
 
@@ -95,7 +96,7 @@ const highlightMatch = (label: string, query: string) => {
   );
 };
 
-const implementationLabel = (status?: string) => status === "Real" ? "Implemented" : status === "Substitute" ? "Placeholder" : status ?? "Placeholder";
+const implementationLabel = (status?: string) => status === "Real" ? "Live" : status === "Substitute" ? "Guided model" : status ?? "Guided model";
 
 class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -378,30 +379,7 @@ export default function RootLayout() {
               <Outlet />
             </Suspense>
           </PageErrorBoundary>
-          {currentAlgorithm && (
-            <section className="mt-8 rounded-md border border-teal-200 bg-teal-50 p-4 text-sm text-teal-950 shadow-sm">
-              <div className="text-xs font-bold uppercase tracking-wide text-teal-800">Page-end summary</div>
-              <p className="mt-2">
-                {currentAlgorithm.label} starts with {currentAlgorithm.inputs[0]?.toLowerCase() ?? "input"},
-                shows {currentAlgorithm.visualizers[0]?.toLowerCase() ?? "the main transformation"},
-                and ends with {currentAlgorithm.outputs[0]?.toLowerCase() ?? "a result"}.
-              </p>
-              {currentAlgorithm.notes[0] && <p className="mt-2 font-medium">{currentAlgorithm.notes[0]}</p>}
-            </section>
-          )}
-          {learnNext.length > 0 && (
-            <section className="mt-4 rounded-md border border-slate-200 bg-white p-4 text-sm shadow-sm">
-              <div className="text-xs font-bold uppercase tracking-wide text-slate-600">What to Learn Next</div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                {learnNext.map((item) => (
-                  <Link key={item.route} to={item.route} className="rounded-md border border-slate-200 bg-slate-50 p-3 transition hover:border-teal-300 hover:bg-teal-50">
-                    <div className="font-semibold text-slate-900">{item.label}</div>
-                    <div className="mt-1 text-xs text-slate-600">{categoryDisplay[item.category] ?? item.category}</div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
+          {currentAlgorithm && <div className="mt-8"><AlgorithmLearningFooter route={currentAlgorithm.route} category={currentAlgorithm.category} status={currentAlgorithm.securityStatus} /></div>}
           <footer className="mt-10 border-t border-slate-200 py-4 text-xs text-slate-500">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <div>

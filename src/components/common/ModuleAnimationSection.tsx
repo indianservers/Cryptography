@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { getModuleAnimationContent } from "../../data/moduleAnimationContent";
 import { useAnimationSequence } from "../../hooks/useAnimationSequence";
 import { AnimatedAlphabetMap } from "../visual/AnimatedAlphabetMap";
@@ -19,6 +20,12 @@ function activeIds(stepId: string, values: string[] = []) {
 export function ModuleAnimationSection({ route }: { route: string }) {
   const content = getModuleAnimationContent(route);
   const controls = useAnimationSequence(content?.sequence ?? { id: "empty", title: "", steps: [], reducedMotionSummary: "" });
+
+  useEffect(() => {
+    const replay = () => controls.replay();
+    window.addEventListener("algorithm-replay", replay);
+    return () => window.removeEventListener("algorithm-replay", replay);
+  }, [controls]);
 
   if (!content || !controls.currentStep) return null;
 

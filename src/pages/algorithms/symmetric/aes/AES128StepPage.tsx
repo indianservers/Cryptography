@@ -26,6 +26,8 @@ export default function AES128StepPage() {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(900);
   const operationRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const stepSectionRef = useRef<HTMLElement | null>(null);
+  const byteTableRef = useRef<HTMLDivElement | null>(null);
   const plaintextBytes = new TextEncoder().encode(plaintext).length;
   const keyBytes = new TextEncoder().encode(key).length;
 
@@ -44,6 +46,10 @@ export default function AES128StepPage() {
 
   useEffect(() => {
     operationRefs.current[activeStepIndex]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  }, [activeStepIndex]);
+
+  useEffect(() => {
+    stepSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [activeStepIndex]);
 
   useEffect(() => {
@@ -90,7 +96,7 @@ export default function AES128StepPage() {
         </div>
       </InputPanel>
 
-      <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+      <section ref={stepSectionRef} className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -98,6 +104,9 @@ export default function AES128StepPage() {
               <p className="mt-1 text-sm text-slate-600">{step.explanation}</p>
             </div>
             <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">{step.operation}</span>
+          </div>
+          <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-950">
+            Current byte being processed: <span className="font-mono">{activeByte ?? "none"}</span>. The same byte is highlighted in the matrix and table.
           </div>
           <MatrixView values={matrixValues(step.state)} changed={changed} active={activeByte} />
           <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -114,14 +123,15 @@ export default function AES128StepPage() {
 
         <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold">Before and after bytes</h2>
-          <div className="max-h-[34rem] overflow-auto rounded-md border border-slate-200">
+          <div ref={byteTableRef} className="max-h-[34rem] overflow-auto rounded-md border border-slate-200">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-slate-100">
                 <tr><th className="p-2 text-left">Index</th><th className="p-2 text-left">Before</th><th className="p-2 text-left">After</th><th className="p-2 text-left">Meaning</th></tr>
               </thead>
               <tbody>{step.state.map((byte, index) => {
                 const before = step.previousState[index];
-                return <tr key={index} className={before !== byte ? "border-t border-cyan-100 bg-cyan-50" : "border-t border-slate-100"}><td className="p-2 font-mono">{index}</td><td className="p-2 font-mono">{hexByte(before)}</td><td className="p-2 font-mono">{hexByte(byte)}</td><td className="p-2 text-slate-600">{step.operation === "SubBytes" ? "S-box substitution" : step.operation === "AddRoundKey" ? "XOR with key byte" : step.operation}</td></tr>;
+                const isCurrentByte = index === activeByte;
+                return <tr key={index} className={`${isCurrentByte ? "border-t border-amber-200 bg-amber-100 ring-2 ring-inset ring-amber-300" : before !== byte ? "border-t border-cyan-100 bg-cyan-50" : "border-t border-slate-100"}`}><td className={`p-2 font-mono ${isCurrentByte ? "font-bold text-amber-950" : ""}`}>{index}</td><td className="p-2 font-mono">{hexByte(before)}</td><td className={`p-2 font-mono ${isCurrentByte ? "font-bold text-amber-950" : ""}`}>{hexByte(byte)}</td><td className="p-2 text-slate-600">{step.operation === "SubBytes" ? "S-box substitution" : step.operation === "AddRoundKey" ? "XOR with key byte" : step.operation}</td></tr>;
               })}</tbody>
             </table>
           </div>

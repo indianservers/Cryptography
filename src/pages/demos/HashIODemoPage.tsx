@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Card } from "../../components/common/Field";
 import { SimpleDemoShell } from "../../components/common/SimpleDemoShell";
 import { md5 } from "../../lib/hashCores";
 import { asciiError, shaHex } from "../../lib/simpleDemos";
@@ -36,13 +37,21 @@ export function HashIODemoPage({
       fields={[{ label: "Message", value: message, onChange: setMessage, multiline: true, error: asciiError(message, "Message") }]}
       outputs={[
         { label: `${algorithm} digest`, value: digest },
+        { label: "Output length", value: digest ? `${digest.length * 4} bits (${digest.length} hex chars)` : "" },
         { label: "Message size", value: `${new TextEncoder().encode(message).length} bytes` },
       ]}
       notes={[note]}
       onSample={() => setMessage("The quick brown fox jumps over the lazy dog")}
       onReset={() => setMessage("")}
     >
-      Enter ASCII text and view the final hash digest only.
+      <div className="space-y-3">
+        <p>Enter ASCII text and view the final hash digest only.</p>
+        <Card title="Hash output lengths">
+          <div className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-5">
+            {[["MD5", "128 bits"], ["SHA-1", "160 bits"], ["SHA-256", "256 bits"], ["SHA-384", "384 bits"], ["SHA-512", "512 bits"]].map(([name, size]) => <div key={name} className={`rounded-md border p-2 ${name === algorithm ? "border-cyan-300 bg-cyan-50 font-semibold" : "border-slate-200 bg-white"}`}><p>{name}</p><p className="font-mono">{size}</p></div>)}
+          </div>
+        </Card>
+      </div>
     </SimpleDemoShell>
   );
 }

@@ -59,7 +59,8 @@ export default function GCMModePage() {
         </Card>
       </div>
       <Card title="GCM internal flow">
-        <div className="grid gap-3 md:grid-cols-3"><ValueRow label="CTR lane" value="AES_K(nonce || counter) XOR plaintext" /><ValueRow label="GHASH lane" value="AAD and ciphertext are authenticated" /><ValueRow label="Tag lane" value="Encrypted counter mask XOR GHASH" /></div>
+        <p className="mb-4 text-sm text-slate-600">GCM does two jobs at once: CTR mode hides the message, and the authentication tag proves the ciphertext and AAD were not changed.</p>
+        <div className="grid gap-3 md:grid-cols-3"><ValueRow label="CTR lane" value="AES_K(nonce || counter) XOR plaintext" /><ValueRow label="GHASH lane" value="AAD and ciphertext are authenticated" /><div className="rounded-md border-2 border-emerald-300 bg-emerald-50 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Highlighted tag use</p><p className="mt-1 break-all font-mono text-sm font-bold text-emerald-950">{tag || "Encrypt to create a tag"}</p><p className="mt-2 text-xs text-emerald-800">During verify, this tag must match before plaintext is trusted.</p></div></div>
       </Card>
       <Card title="Warnings and export">
         <WarningBadge>Nonce reuse in GCM is catastrophic: it can reveal plaintext relationships and damage tag security.</WarningBadge>

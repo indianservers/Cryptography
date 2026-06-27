@@ -471,7 +471,7 @@ export function AlgorithmPageShell({ title, category, status, intro, inputs, out
           <OutputPanel>
             <div className="space-y-3">
               <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-                Computed locally in the browser. Legacy or browser-unavailable primitives use small educational arithmetic or Web Crypto-backed previews instead of empty placeholders.
+                Computed locally in the browser. Legacy or browser-unavailable primitives use small educational arithmetic or Web Crypto-backed visual models instead of static pages.
               </div>
               {!derived.length && <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">Run the demo to see intermediate values and the final output here.</div>}
               {derived.map((output, index) => <div key={output.output} className={`rounded-md border p-3 ${outputTone(output.output, index, derived.length)}`}><div className="mb-2 text-xs font-semibold uppercase">{index === derived.length - 1 ? "Final output" : "Intermediate result"}</div><ResponsiveDataBlock label={output.output} value={output.value} copyable /></div>)}

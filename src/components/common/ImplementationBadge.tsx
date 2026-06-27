@@ -13,10 +13,17 @@ const supportStyles: Record<BrowserSupport, string> = {
   Mixed: "border-violet-200 bg-violet-50 text-violet-800",
 };
 
+const supportLabels: Record<BrowserSupport, string> = {
+  "Web Crypto": "Web Crypto",
+  "Custom TypeScript": "Custom TypeScript",
+  "Educational Substitute": "Guided Visual Model",
+  Mixed: "Mixed",
+};
+
 const implementationLabels: Record<ImplementationStatus, string> = {
-  Real: "Implemented",
-  Educational: "Educational",
-  Substitute: "Placeholder",
+  Real: "Live",
+  Educational: "Live model",
+  Substitute: "Guided model",
 };
 
 export function ImplementationBadge({ status, compact = false }: { status: ImplementationStatus; compact?: boolean }) {
@@ -24,5 +31,5 @@ export function ImplementationBadge({ status, compact = false }: { status: Imple
 }
 
 export function BrowserSupportBadge({ support, compact = false }: { support: BrowserSupport; compact?: boolean }) {
-  return <span title={`Browser support: ${support}`} className={`rounded-full border px-2 py-0.5 font-semibold ${compact ? "text-[10px]" : "text-xs"} ${supportStyles[support]}`}>{support}</span>;
+  return <span title={`Browser support: ${supportLabels[support]}`} className={`rounded-full border px-2 py-0.5 font-semibold ${compact ? "text-[10px]" : "text-xs"} ${supportStyles[support]}`}>{supportLabels[support]}</span>;
 }

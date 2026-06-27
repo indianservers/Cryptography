@@ -80,6 +80,26 @@ export default function BlowfishPage() {
             })}
           </div>
         </div>
+        <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-4">
+          <div className="text-xs font-bold uppercase tracking-wide text-amber-900">Currently changing in round {activeRound}</div>
+          <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-center">
+            <div className="rounded-md border border-slate-200 bg-white p-3 text-center">
+              <div className="text-xs font-semibold uppercase text-slate-500">Left half</div>
+              <div className="mt-1 font-mono font-bold">L{activeRound - 1}</div>
+            </div>
+            <div className="text-center font-bold text-slate-400">xor P{activeRound}</div>
+            <div className="changed-byte rounded-md border border-amber-300 bg-white p-3 text-center">
+              <div className="text-xs font-semibold uppercase text-amber-800">Active F input</div>
+              <div className="mt-1 font-mono font-bold">F(L xor P)</div>
+            </div>
+            <div className="text-center font-bold text-slate-400">xor</div>
+            <div className="rounded-md border border-slate-200 bg-white p-3 text-center">
+              <div className="text-xs font-semibold uppercase text-slate-500">Right half</div>
+              <div className="mt-1 font-mono font-bold">R{activeRound}</div>
+            </div>
+          </div>
+          <p className="mt-3 text-sm text-amber-950">Only the active F input is highlighted here. The other boxes provide context so the round does not look like all 16 rounds are changing at once.</p>
+        </div>
         <p className="mt-4 text-sm text-slate-700">Only the selected round is highlighted so the 16-round Feistel flow is easier to follow: one side enters F, the result mixes with the other side, then the halves swap.</p>
       </Card>
       <WarningBadge>Blowfish is legacy because 64-bit blocks collide too quickly for large data volumes. Use AES-GCM or ChaCha20-Poly1305 for new designs.</WarningBadge>

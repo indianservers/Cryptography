@@ -52,6 +52,12 @@ export default function NonceReuseAttackPage() {
           </div>
         </Card>
       </div>
+      <Card title="Why the leak happens">
+        <p className="mb-3 text-sm text-slate-600">Reusing a nonce can repeat the same keystream, so XORing two ciphertexts cancels the keystream and exposes plaintext relationships.</p>
+        <div className="grid gap-3 text-sm md:grid-cols-4">
+          {["C1 = P1 xor K", "C2 = P2 xor K", "C1 xor C2", "P1 xor P2"].map((label, index) => <div key={label} className={`rounded-md border p-3 ${index >= 2 ? "border-rose-300 bg-rose-50 font-semibold text-rose-950" : "border-slate-200 bg-slate-50"}`}>{label}</div>)}
+        </div>
+      </Card>
     </div>
   );
 }

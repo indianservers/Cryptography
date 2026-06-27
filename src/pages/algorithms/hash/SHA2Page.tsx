@@ -62,6 +62,7 @@ export default function SHA2Page() {
         </Card>
       </div>
       <Card title="SHA-2 family comparison">
+        <p className="mb-4 text-sm text-slate-600">SHA-2 replaced SHA-1 because SHA-1 collision attacks became practical, while SHA-2 still has a strong security margin for modern systems.</p>
         <div className="overflow-auto rounded-md border border-slate-200">
           <table className="w-full text-sm">
             <thead className="bg-slate-100">

@@ -124,6 +124,11 @@ export default function HexToolPage() {
           </div>
         </Card>
       )}
+      <Card title="Common hex values">
+        <div className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          {[["Space", "20"], ["0", "30"], ["A", "41"], ["a", "61"], ["Line feed", "0a"], ["Carriage return", "0d"], ["Null byte", "00"], ["DEL", "7f"]].map(([label, value]) => <div key={label} className="rounded-md border border-slate-200 bg-slate-50 p-3"><p className="text-xs font-semibold text-slate-500">{label}</p><p className="mt-1 font-mono text-lg font-bold text-slate-950">{value}</p></div>)}
+        </div>
+      </Card>
       <WarningBadge>Hex encoding doubles the display length but adds no secrecy or error detection. It is a human-readable display convention for binary data, not a form of encryption.</WarningBadge>
     </div>
   );

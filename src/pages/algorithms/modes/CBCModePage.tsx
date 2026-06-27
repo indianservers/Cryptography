@@ -8,6 +8,7 @@ import { asciiToHex } from "../../../lib/format";
 export default function CBCModePage() {
   const [plain, setPlain] = useState("CBC chains every block to the previous ciphertext.");
   const [iv, setIv] = useState("cbc iv block 123");
+  const [activeBlock, setActiveBlock] = useState(0);
   const blocks = useMemo(() => textBlocks(plain, 16), [plain]);
   const ivHex = asciiToHex(iv, 16);
   const chain = useMemo(() => {
@@ -35,7 +36,17 @@ export default function CBCModePage() {
         </Card>
       </div>
       <Card title="Chained block flow">
-        <div className="space-y-3">{chain.map((row) => <div key={row.index} className="grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs md:grid-cols-4"><div><b>P{row.index}</b><p className="break-all font-mono">{row.block}</p></div><div><b>xor {row.previous}</b><p className="break-all font-mono">{row.xored}</p></div><div><b>encrypt</b><p>block cipher call</p></div><div><b>C{row.index}</b><p className="break-all font-mono">{row.cipherConcept}</p></div></div>)}</div>
+        <label className="mb-4 block text-sm font-medium text-slate-700">Active block: {Math.min(activeBlock, Math.max(chain.length - 1, 0))}<input className="ml-3 w-48 align-middle" type="range" min="0" max={Math.max(chain.length - 1, 0)} value={Math.min(activeBlock, Math.max(chain.length - 1, 0))} onChange={(event) => setActiveBlock(Number(event.target.value))} /></label>
+        <div className="space-y-3">{chain.map((row) => {
+          const active = row.index === Math.min(activeBlock, Math.max(chain.length - 1, 0));
+          return <div key={row.index} className={`grid gap-2 rounded-md border p-3 text-xs md:grid-cols-4 ${active ? "border-cyan-300 bg-cyan-50 shadow-sm" : "border-slate-200 bg-slate-50"}`}><div><b>P{row.index}</b><p className="break-all font-mono">{row.block}</p></div><div><b>xor {row.previous}</b><p className="break-all font-mono">{row.xored}</p></div><div><b>encrypt</b><p>{active ? "current block-cipher call" : "block cipher call"}</p></div><div><b>C{row.index}</b><p className="break-all font-mono">{row.cipherConcept}</p></div></div>;
+        })}</div>
+      </Card>
+      <Card title="What changes when one block changes">
+        <div className="grid gap-3 text-sm md:grid-cols-4">
+          {chain.slice(0, 4).map((row) => <div key={row.index} className={`rounded-md border p-3 ${row.index >= Math.min(activeBlock, Math.max(chain.length - 1, 0)) ? "border-amber-300 bg-amber-50 text-amber-950" : "border-slate-200 bg-white text-slate-600"}`}><p className="font-semibold">C{row.index}</p><p className="mt-1 text-xs">{row.index === Math.min(activeBlock, Math.max(chain.length - 1, 0)) ? "Changed block" : row.index > Math.min(activeBlock, Math.max(chain.length - 1, 0)) ? "Affected by chaining" : "Before the change"}</p></div>)}
+        </div>
+        <p className="mt-3 text-sm text-slate-600">In CBC encryption, changing one plaintext block changes its ciphertext block and all following chained ciphertext blocks.</p>
       </Card>
       <WarningBadge>CBC needs unpredictable IVs and separate authentication. Do not expose padding error details.</WarningBadge>
     </div>

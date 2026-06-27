@@ -19,7 +19,12 @@ export default function CaesarCipherPage() {
   const safeActiveIndex = Math.min(activeIndex, Math.max(plain.length - 1, 0));
   const activeChar = plain[safeActiveIndex] ?? "";
   const activeShift = /[a-z]/i.test(activeChar) ? caesar(activeChar, shift) : activeChar;
+  const activeLetter = activeChar.toUpperCase();
+  const activeLetterIndex = alphabet.indexOf(activeLetter);
+  const shiftedLetterIndex = activeLetterIndex >= 0 ? (activeLetterIndex + shift) % 26 : -1;
+  const correctCandidate = brute.find((row) => row.shift === shift);
   const animatedCipher = Array.from(plain).map((char, index) => index <= safeActiveIndex ? caesar(char, shift) : char).join("");
+  const activeLetterStyle = shiftedLetterIndex >= 0 ? { left: `${(shiftedLetterIndex / 25) * 100}%` } : undefined;
 
   return (
     <div className="space-y-6">
@@ -50,21 +55,72 @@ export default function CaesarCipherPage() {
         </div>
       </Card>
       <Card title="Animated shift preview">
-        <div className="grid gap-4 md:grid-cols-[8rem_1fr]">
+        <div className="grid gap-4 md:grid-cols-[10rem_1fr]">
           <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-center">
             <div className="text-xs font-semibold uppercase text-amber-800">Current move</div>
             <div className="mt-2 font-mono text-2xl">{activeChar || " "} {"->"} {activeShift || " "}</div>
+            <div className="mt-2 text-xs font-medium text-amber-900">Shift by {shift} place{shift === 1 ? "" : "s"}</div>
           </div>
-          <div>
-            <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Cipher appears one character at a time</div>
-            <div className="rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-sm">{animatedCipher}</div>
+          <div className="space-y-4">
+            <div>
+              <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Letter moves across the alphabet</div>
+              <div className="rounded-md border border-slate-200 bg-white p-3">
+                <div className="relative h-20">
+                  <div className="absolute left-0 right-0 top-8 grid gap-0 rounded-md border border-slate-200 bg-slate-50 px-1 py-2 font-mono text-[10px] text-slate-500 sm:text-xs" style={{ gridTemplateColumns: "repeat(26, minmax(0, 1fr))" }}>
+                    {alphabet.split("").map((letter, index) => (
+                      <span key={letter} className={`text-center ${index === activeLetterIndex ? "font-bold text-amber-700" : ""} ${index === shiftedLetterIndex ? "font-bold text-teal-700" : ""}`}>{letter}</span>
+                    ))}
+                  </div>
+                  {shiftedLetterIndex >= 0 ? (
+                    <>
+                      <div className="absolute top-0 -translate-x-1/2 rounded-md border border-amber-300 bg-amber-100 px-2 py-1 font-mono text-sm font-bold text-amber-950 shadow-sm" style={{ left: `${(activeLetterIndex / 25) * 100}%` }}>
+                        {activeLetter}
+                      </div>
+                      <div className="changed-byte absolute top-14 -translate-x-1/2 rounded-md border border-teal-400 bg-teal-100 px-2 py-1 font-mono text-sm font-bold text-teal-950 shadow-sm transition-[left] duration-700 ease-out" style={activeLetterStyle}>
+                        {activeShift.toUpperCase()}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="absolute inset-x-0 top-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">Spaces and punctuation do not move; they pass through unchanged.</div>
+                  )}
+                </div>
+                <div className="mt-2 flex items-center justify-between text-xs font-semibold text-slate-500">
+                  <span>original position</span>
+                  <span>shifted position</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Cipher appears one character at a time</div>
+              <div className="rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-sm">{animatedCipher}</div>
+            </div>
           </div>
         </div>
       </Card>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title="Brute force all shifts">
+          {correctCandidate && (
+            <div className="mb-4 rounded-md border-2 border-emerald-400 bg-emerald-50 p-4 shadow-sm">
+              <div className="text-xs font-bold uppercase tracking-wide text-emerald-800">Correct answer after brute force</div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="rounded-md border border-emerald-300 bg-white px-3 py-2 font-mono text-sm font-bold text-emerald-950">shift {correctCandidate.shift}</span>
+                <span className="font-mono text-sm text-emerald-950">{correctCandidate.text}</span>
+              </div>
+            </div>
+          )}
           <div className="max-h-96 overflow-auto rounded-md border border-slate-200">
-            <table className="w-full text-sm"><tbody>{brute.map((row) => <tr key={row.shift} className={`border-b border-slate-100 ${row.shift === shift ? "bg-emerald-50" : ""}`}><td className="w-20 p-2 font-mono">{row.shift}</td><td className="p-2">{row.text}{row.shift === shift && <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">correct inverse shift</span>}</td></tr>)}</tbody></table>
+            <table className="w-full text-sm"><tbody>{brute.map((row) => {
+              const isCorrect = row.shift === shift;
+              return (
+                <tr key={row.shift} className={`border-b border-slate-100 ${isCorrect ? "bg-emerald-100 ring-2 ring-inset ring-emerald-400" : ""}`}>
+                  <td className={`w-20 p-2 font-mono ${isCorrect ? "font-bold text-emerald-950" : ""}`}>{row.shift}</td>
+                  <td className={`p-2 ${isCorrect ? "font-semibold text-emerald-950" : ""}`}>
+                    {row.text}
+                    {isCorrect && <span className="ml-2 rounded-full border border-emerald-300 bg-white px-2 py-0.5 text-xs font-bold uppercase text-emerald-800">Correct answer</span>}
+                  </td>
+                </tr>
+              );
+            })}</tbody></table>
           </div>
         </Card>
         <Card title="Frequency chart">

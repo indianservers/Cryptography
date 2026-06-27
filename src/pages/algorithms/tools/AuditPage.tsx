@@ -9,8 +9,8 @@ import { getAccuracyLabel, getVerificationLabel } from "../../../lib/auditStatus
 
 export default function AuditPage() {
   const [filter, setFilter] = useState("All");
-  const real = navigationItems.filter((item) => item.implementationStatus === "Real").length;
-  const educationalOrPending = navigationItems.length - real;
+  const live = navigationItems.length;
+  const guidedModels = navigationItems.filter((item) => item.browserSupport === "Educational Substitute").length;
   const unsafe = navigationItems.filter((item) => item.securityStatus === "Unsafe" || item.securityStatus === "Deprecated").length;
   const webCrypto = navigationItems.filter((item) => item.browserSupport === "Web Crypto").length;
   const custom = navigationItems.filter((item) => item.browserSupport === "Custom TypeScript").length;
@@ -18,7 +18,7 @@ export default function AuditPage() {
   const filteredItems = useMemo(() => navigationItems.filter((item) => {
     if (filter === "All") return true;
     if (filter === "Real") return item.implementationStatus === "Real";
-    if (filter === "Substitute") return item.implementationStatus !== "Real";
+    if (filter === "Guided model") return item.browserSupport === "Educational Substitute";
     if (filter === "Unsafe") return item.securityStatus === "Unsafe" || item.securityStatus === "Deprecated";
     if (filter === "Web Crypto") return item.browserSupport === "Web Crypto" || item.browserSupport === "Mixed";
     if (filter === "Custom TypeScript") return item.browserSupport === "Custom TypeScript";
@@ -27,14 +27,14 @@ export default function AuditPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Implementation Audit" category="Benchmark and Comparison" status="Educational">Track which pages are Web Crypto-backed, exact educational, conceptual previews, substitutes, deprecated demos, or still waiting for expert review.</PageHeader>
+      <PageHeader title="Implementation Audit" category="Benchmark and Comparison" status="Educational">Track live browser modules by Web Crypto support, custom TypeScript logic, guided visual models, safety status, and verification evidence.</PageHeader>
       <section className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-5"><div className="text-3xl font-bold text-emerald-900">{real}</div><div className="text-sm text-emerald-800">Web Crypto-backed pages</div></div>
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-5"><div className="text-3xl font-bold text-amber-900">{educationalOrPending}</div><div className="text-sm text-amber-800">educational or pending pages</div></div>
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-5"><div className="text-3xl font-bold text-emerald-900">{live}</div><div className="text-sm text-emerald-800">live browser pages</div></div>
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-5"><div className="text-3xl font-bold text-amber-900">{guidedModels}</div><div className="text-sm text-amber-800">guided visual models</div></div>
         <div className="rounded-md border border-rose-200 bg-rose-50 p-5"><div className="text-3xl font-bold text-rose-900">{unsafe}</div><div className="text-sm text-rose-800">unsafe/deprecated topics</div></div>
         <div className="rounded-md border border-indigo-200 bg-indigo-50 p-5"><div className="text-3xl font-bold text-indigo-900">{webCrypto}</div><div className="text-sm text-indigo-800">Web Crypto primitives</div></div>
         <div className="rounded-md border border-sky-200 bg-sky-50 p-5"><div className="text-3xl font-bold text-sky-900">{custom}</div><div className="text-sm text-sky-800">custom TypeScript logic</div></div>
-        <div className="rounded-md border border-orange-200 bg-orange-50 p-5"><div className="text-3xl font-bold text-orange-900">{educational}</div><div className="text-sm text-orange-800">browser substitutes</div></div>
+        <div className="rounded-md border border-orange-200 bg-orange-50 p-5"><div className="text-3xl font-bold text-orange-900">{educational}</div><div className="text-sm text-orange-800">guided visual models</div></div>
       </section>
       <section className="grid gap-4 md:grid-cols-4">
         {(["P0", "P1", "P2", "P3"] as const).map((priority) => (
@@ -66,7 +66,7 @@ export default function AuditPage() {
             <h2 className="text-lg font-semibold">Page Inventory</h2>
             <p className="mt-1 text-sm text-slate-600">Filter by implementation quality, safety status, and browser primitive coverage.</p>
           </div>
-          <label className="label">Audit filter<select className="field mt-1" value={filter} onChange={(event) => setFilter(event.target.value)}><option>All</option><option>Real</option><option>Substitute</option><option>Unsafe</option><option>Web Crypto</option><option>Custom TypeScript</option></select></label>
+          <label className="label">Audit filter<select className="field mt-1" value={filter} onChange={(event) => setFilter(event.target.value)}><option>All</option><option>Real</option><option>Guided model</option><option>Unsafe</option><option>Web Crypto</option><option>Custom TypeScript</option></select></label>
         </div>
         <div className="overflow-auto rounded-md border border-slate-200">
           <table className="w-full text-sm">

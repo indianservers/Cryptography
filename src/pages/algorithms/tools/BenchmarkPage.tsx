@@ -35,6 +35,8 @@ export default function BenchmarkPage() {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<{ ms: number; throughput: number; output: string } | null>(null);
   const inputSizeLabel = useMemo(() => `${(size / 1024).toFixed(0)} KiB`, [size]);
+  const average = algorithm === "AES-GCM" ? 450 : algorithm === "HMAC-SHA-256" ? 300 : algorithm === "SHA-512" ? 380 : 500;
+  const comparison = result ? result.throughput >= average ? "above the classroom average" : "below the classroom average" : "run a benchmark to compare";
 
   const run = async () => {
     setRunning(true);
@@ -72,6 +74,8 @@ export default function BenchmarkPage() {
                 <ValueRow label="Input per iteration" value={inputSizeLabel} />
                 <ValueRow label="Time taken" value={`${result.ms.toFixed(2)} ms`} />
                 <ValueRow label="Throughput" value={`${result.throughput.toFixed(2)} MiB/s`} />
+                <ValueRow label="Average reference" value={`${average} MiB/s`} />
+                <ValueRow label="Comparison" value={comparison} />
               </div>
               <div className="h-4 rounded bg-slate-200"><div className="h-4 rounded bg-cyan-500" style={{ width: `${Math.min(100, result.throughput / 20)}%` }} /></div>
               <ValueRow label="Output preview" value={result.output} />
@@ -80,7 +84,7 @@ export default function BenchmarkPage() {
         </Card>
       </div>
       <Card title="Warnings and export">
-        <WarningBadge>Browser benchmarks are useful for comparison on this device only. Do not treat them as universal algorithm rankings.</WarningBadge>
+        <WarningBadge>Browser benchmarks are useful for comparison on this device only. Scores vary by CPU, browser, battery mode, background tabs, and thermal state.</WarningBadge>
         <div className="mt-4"><ExportReportButton title="Browser benchmark" data={{ algorithm, size, iterations, result }} /></div>
       </Card>
     </div>

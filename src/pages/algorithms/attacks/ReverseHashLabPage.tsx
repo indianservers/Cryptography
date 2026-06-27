@@ -333,6 +333,9 @@ export default function ReverseHashLabPage() {
       </Card>
 
       <Card title="Boundary">
+        <div className="mb-3 rounded-md border border-cyan-200 bg-cyan-50 p-3 text-sm text-cyan-900">
+          This lab uses small inputs because reverse hashing is a search problem: every extra character multiplies the number of guesses the browser must try.
+        </div>
         <WarningBadge>This app intentionally does not implement high-speed kernels, GPU cracking, credential capture formats, handshake cracking, or large rule/mask attacks.</WarningBadge>
       </Card>
     </div>

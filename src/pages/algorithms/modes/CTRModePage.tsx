@@ -14,6 +14,7 @@ export default function CTRModePage() {
   const [counterText, setCounterText] = useState("counter block 123");
   const [cipher, setCipher] = useState("");
   const [message, setMessage] = useState("Ready to encrypt locally with AES-CTR.");
+  const [activeBlock, setActiveBlock] = useState(0);
   const counterHex = asciiToHex(counterText, 16);
   const blocks = useMemo(() => {
     const data = Array.from(new TextEncoder().encode(plain));
@@ -49,8 +50,15 @@ export default function CTRModePage() {
         </Card>
       </div>
       <Card title="Nonce + counter block flow">
+        <label className="mb-4 block text-sm font-medium text-slate-700">Active counter block: {Math.min(activeBlock, Math.max(blocks.length - 1, 0))}<input className="ml-3 w-48 align-middle" type="range" min="0" max={Math.max(blocks.length - 1, 0)} value={Math.min(activeBlock, Math.max(blocks.length - 1, 0))} onChange={(event) => setActiveBlock(Number(event.target.value))} /></label>
         <div className="overflow-auto rounded-md border border-slate-200">
-          <table className="w-full text-sm"><thead className="bg-slate-100"><tr><th className="p-2 text-left">Block</th><th className="p-2 text-left">Counter block</th><th className="p-2 text-left">Plaintext bytes</th></tr></thead><tbody>{blocks.map((block) => <tr key={block.block} className="border-t border-slate-100"><td className="p-2 font-mono">{block.block}</td><td className="p-2 font-mono">{block.counter}</td><td className="p-2 font-mono">{block.plaintext}</td></tr>)}</tbody></table>
+          <table className="w-full text-sm"><thead className="bg-slate-100"><tr><th className="p-2 text-left">Block</th><th className="p-2 text-left">Counter block</th><th className="p-2 text-left">Plaintext bytes</th></tr></thead><tbody>{blocks.map((block) => <tr key={block.block} className={`border-t border-slate-100 ${block.block === Math.min(activeBlock, Math.max(blocks.length - 1, 0)) ? "bg-cyan-50 font-semibold" : ""}`}><td className="p-2 font-mono">{block.block}</td><td className="p-2 font-mono">{block.counter}</td><td className="p-2 font-mono">{block.plaintext}</td></tr>)}</tbody></table>
+        </div>
+      </Card>
+      <Card title="CTR compared with CBC">
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm"><p className="font-semibold text-emerald-800">CTR animation</p><p className="mt-2 font-mono text-xs">counter 0 {"->"} keystream 0<br />counter 1 {"->"} keystream 1<br />counter 2 {"->"} keystream 2</p><p className="mt-2 text-emerald-800">Each counter block can be encrypted independently.</p></div>
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm"><p className="font-semibold text-amber-800">CBC animation</p><p className="mt-2 font-mono text-xs">C0 feeds block 1<br />C1 feeds block 2<br />C2 feeds block 3</p><p className="mt-2 text-amber-800">Each block depends on the previous ciphertext.</p></div>
         </div>
       </Card>
       <Card title="Warnings and export">

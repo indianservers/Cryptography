@@ -45,6 +45,16 @@ export default function RSAEncryptionPage() {
         </Card>
       </div>
       {result.ok && (
+        <Card title="Encryption flow before output">
+          <div className="grid gap-3 text-sm md:grid-cols-4">
+            <div className="rounded-md border-2 border-cyan-300 bg-cyan-50 p-3"><p className="text-xs font-semibold uppercase text-cyan-700">Plaintext</p><p className="mt-1 font-mono text-lg font-bold">{result.mValue.toString()}</p></div>
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3"><p className="text-xs font-semibold uppercase text-slate-500">Public key</p><p className="mt-1 font-mono">e={result.eValue}<br />n={result.nValue}</p></div>
+            <div className="rounded-md border border-slate-200 bg-white p-3"><p className="text-xs font-semibold uppercase text-slate-500">Formula</p><p className="mt-1 font-mono">m^e mod n</p></div>
+            <div className="rounded-md border-2 border-emerald-300 bg-emerald-50 p-3"><p className="text-xs font-semibold uppercase text-emerald-700">Ciphertext</p><p className="mt-1 font-mono text-lg font-bold">{result.cipher.toString()}</p></div>
+          </div>
+        </Card>
+      )}
+      {result.ok && (
         <Card title="Square-and-multiply trace">
           <div className="overflow-auto rounded-md border border-slate-200">
             <table className="w-full text-sm">

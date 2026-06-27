@@ -70,7 +70,10 @@ function SBoxLookupPanel({ byteMap }: { byteMap?: { index: number; before: numbe
         <h3 className="text-sm font-semibold">S-box lookup</h3>
         <p className="mt-1 text-xs text-slate-600">For SubBytes, the high nibble selects the row and the low nibble selects the column. The highlighted byte below is the first byte transformed in this step.</p>
       </div>
-      <div className="max-h-72 overflow-auto rounded-md border border-slate-200 bg-white">
+      <div className="rounded-md border border-cyan-200 bg-cyan-50 p-3 text-sm text-cyan-950">
+        {selected ? <>Current lookup: byte {selected.index} uses row <span className="font-mono font-bold">{selected.row.toString(16)}</span>, column <span className="font-mono font-bold">{selected.col.toString(16)}</span>, so <span className="font-mono font-bold">{hexByte(selected.before)}</span> becomes <span className="font-mono font-bold">{hexByte(selected.after)}</span>.</> : "Move to a SubBytes step to see the selected S-box lookup."}
+      </div>
+      <div className="max-h-44 overflow-auto rounded-md border border-slate-200 bg-white">
         <table className="w-full min-w-[30rem] text-center font-mono text-[10px]">
           <thead className="bg-slate-100">
             <tr><th className="p-1 text-slate-500">x</th>{Array.from({ length: 16 }, (_, col) => <th key={col} className="p-1 text-slate-500">{col.toString(16)}</th>)}</tr>

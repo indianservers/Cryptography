@@ -10,10 +10,14 @@ export default function RC4Page() {
   const [plain, setPlain] = useState("Plaintext");
   const [inputMode, setInputMode] = useState<"Text" | "Hex">("Text");
   const [activePhase, setActivePhase] = useState<"KSA" | "PRGA">("KSA");
+  const [activeKsaRow, setActiveKsaRow] = useState(0);
+  const [activePrgaRow, setActivePrgaRow] = useState(0);
   const inputBytes = useMemo(() => inputMode === "Hex" ? hexToBytes(plain) : textToBytes(plain), [inputMode, plain]);
   const keyBytes = useMemo(() => textToBytes(key), [key]);
   const result = useMemo(() => rc4(keyBytes, inputBytes), [inputBytes, keyBytes]);
   const roundTrip = useMemo(() => rc4(keyBytes, result.output).output, [keyBytes, result.output]);
+  const ksaRow = result.ksaTrace[Math.min(activeKsaRow, Math.max(result.ksaTrace.length - 1, 0))];
+  const prgaRow = result.prgaTrace[Math.min(activePrgaRow, Math.max(result.prgaTrace.length - 1, 0))];
 
   return (
     <div className="space-y-6">
@@ -49,21 +53,45 @@ export default function RC4Page() {
             <p className="mt-1 text-sm">The shuffled S array produces one keystream byte per input byte.</p>
           </button>
         </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <div className={`rounded-md border p-3 ${activePhase === "KSA" ? "border-amber-300 bg-amber-50 text-amber-950" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+            <div className="text-xs font-bold uppercase tracking-wide">KSA changing values</div>
+            <p className="mt-1 text-sm">i moves forward, j changes from key bytes, then S[i] and S[j] swap.</p>
+          </div>
+          <div className={`rounded-md border p-3 ${activePhase === "PRGA" ? "border-amber-300 bg-amber-50 text-amber-950" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+            <div className="text-xs font-bold uppercase tracking-wide">PRGA changing values</div>
+            <p className="mt-1 text-sm">i and j keep moving; the selected S values produce the next keystream byte.</p>
+          </div>
+        </div>
       </Card>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title="KSA trace, first 16 swaps">
+          <Field label={`Highlighted KSA swap: ${Math.min(activeKsaRow + 1, Math.max(result.ksaTrace.length, 1))} of ${Math.max(result.ksaTrace.length, 1)}`}>
+            <input className="w-full" type="range" min="0" max={Math.max(result.ksaTrace.length - 1, 0)} value={Math.min(activeKsaRow, Math.max(result.ksaTrace.length - 1, 0))} onChange={(event) => { setActivePhase("KSA"); setActiveKsaRow(Number(event.target.value)); }} />
+          </Field>
+          {ksaRow && <div className="mb-3 mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Now changing: i=<span className="font-mono font-bold">{ksaRow.i}</span>, j=<span className="font-mono font-bold">{ksaRow.j}</span>, swap S[i]=<span className="font-mono font-bold">{ksaRow.si}</span> with S[j]=<span className="font-mono font-bold">{ksaRow.sj}</span>.</div>}
           <div className="overflow-auto rounded-md border border-slate-200">
             <table className="w-full text-sm">
               <thead className="bg-slate-100"><tr><th className="p-2 text-left">i</th><th className="p-2 text-left">j</th><th className="p-2 text-left">S[i]</th><th className="p-2 text-left">S[j]</th></tr></thead>
-              <tbody>{result.ksaTrace.map((row, index) => <tr key={row.step} className={`border-t border-slate-100 ${activePhase === "KSA" && index === 0 ? "bg-amber-50" : ""}`}><td className="p-2 font-mono">{row.i}</td><td className="p-2 font-mono">{row.j}</td><td className="p-2 font-mono">{row.si}</td><td className="p-2 font-mono">{row.sj}</td></tr>)}</tbody>
+              <tbody>{result.ksaTrace.map((row, index) => {
+                const active = activePhase === "KSA" && index === activeKsaRow;
+                return <tr key={row.step} className={`border-t border-slate-100 ${active ? "bg-amber-50 ring-2 ring-inset ring-amber-300" : ""}`}><td className={`p-2 font-mono ${active ? "font-bold text-amber-950" : ""}`}>{row.i}</td><td className={`p-2 font-mono ${active ? "bg-amber-100 font-bold text-amber-950" : ""}`}>{row.j}</td><td className={`p-2 font-mono ${active ? "bg-amber-100 font-bold text-amber-950" : ""}`}>{row.si}</td><td className={`p-2 font-mono ${active ? "bg-amber-100 font-bold text-amber-950" : ""}`}>{row.sj}</td></tr>;
+              })}</tbody>
             </table>
           </div>
         </Card>
         <Card title="PRGA trace">
+          <Field label={`Highlighted PRGA byte: ${Math.min(activePrgaRow + 1, Math.max(result.prgaTrace.length, 1))} of ${Math.max(result.prgaTrace.length, 1)}`}>
+            <input className="w-full" type="range" min="0" max={Math.max(result.prgaTrace.length - 1, 0)} value={Math.min(activePrgaRow, Math.max(result.prgaTrace.length - 1, 0))} onChange={(event) => { setActivePhase("PRGA"); setActivePrgaRow(Number(event.target.value)); }} />
+          </Field>
+          {prgaRow && <div className="mb-3 mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Now changing: byte <span className="font-mono font-bold">{prgaRow.step}</span> emits keystream <span className="font-mono font-bold">{prgaRow.keystream.toString(16).padStart(2, "0")}</span>.</div>}
           <div className="overflow-auto rounded-md border border-slate-200">
             <table className="w-full text-sm">
               <thead className="bg-slate-100"><tr><th className="p-2 text-left">Byte</th><th className="p-2 text-left">i</th><th className="p-2 text-left">j</th><th className="p-2 text-left">Keystream</th></tr></thead>
-              <tbody>{result.prgaTrace.map((row, index) => <tr key={row.step} className={`border-t border-slate-100 ${activePhase === "PRGA" && index === 0 ? "bg-amber-50" : ""}`}><td className="p-2 font-mono">{row.step}</td><td className="p-2 font-mono">{row.i}</td><td className="p-2 font-mono">{row.j}</td><td className="p-2 font-mono">{row.keystream.toString(16).padStart(2, "0")}</td></tr>)}</tbody>
+              <tbody>{result.prgaTrace.map((row, index) => {
+                const active = activePhase === "PRGA" && index === activePrgaRow;
+                return <tr key={row.step} className={`border-t border-slate-100 ${active ? "bg-amber-50 ring-2 ring-inset ring-amber-300" : ""}`}><td className="p-2 font-mono">{row.step}</td><td className={`p-2 font-mono ${active ? "bg-amber-100 font-bold text-amber-950" : ""}`}>{row.i}</td><td className={`p-2 font-mono ${active ? "bg-amber-100 font-bold text-amber-950" : ""}`}>{row.j}</td><td className={`p-2 font-mono ${active ? "bg-amber-100 font-bold text-amber-950" : ""}`}>{row.keystream.toString(16).padStart(2, "0")}</td></tr>;
+              })}</tbody>
             </table>
           </div>
         </Card>
