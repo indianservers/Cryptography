@@ -18,6 +18,21 @@ import {
 import { bytesFromHex, expandAes128Key, hexWord, mixColumns } from "../src/pages/algorithms/symmetric/aes/aesEducationalCore";
 import { doubleSha256Hex, hexToBytesStrict, hkdfSha256, parsePemBlocks } from "../src/lib/phase2CryptoExact";
 import { bytesToHex } from "../src/lib/codecs";
+import {
+  asciiToDesBlockHex,
+  buildDesCandidateRow,
+  candidatePosition,
+  classifyDesKey,
+  desKeyForCandidate,
+  effectiveKeyToDesKeyHex,
+  expectedAttempts,
+  formatDuration,
+  hammingDistanceHex,
+  hasOddDesParity,
+  sanitizeDesBlockHex,
+  searchReducedDesKeySpace,
+} from "../src/lib/desBruteForce";
+import { desCryptBlock } from "../src/pages/algorithms/symmetric/des/desEducationalCore";
 
 describe("algorithm vector foundation", () => {
   for (const vector of syncCryptoVectors) {
@@ -96,5 +111,58 @@ describe("phase 2 exact educational helpers", () => {
 
   it("computes double SHA-256 over controlled bytes", async () => {
     expect(await doubleSha256Hex("hello")).toBe("9595c9df90075148eb06860365df33584b75bff782a510c6cd4883a419833d50");
+  });
+
+  it("matches the standard DES known-answer vector", () => {
+    expect(desCryptBlock("0123456789abcdef", "133457799bbcdff1").outputHex).toBe("85e813540f0ab405");
+  });
+
+  it("recovers a candidate from the bounded DES educational key space", () => {
+    const fixedEffectiveKey = 0x12695bc9b7b7a0n;
+    const target = desKeyForCandidate(fixedEffectiveKey, 37, 6);
+    const ciphertext = desCryptBlock("0123456789abcdef", target.keyHex).outputHex;
+    const result = searchReducedDesKeySpace("0123456789abcdef", ciphertext, fixedEffectiveKey, 6);
+
+    expect(result.match?.candidate).toBe(37);
+    expect(result.match?.keyHex).toBe(target.keyHex);
+    expect(result.attempts).toBe(38);
+  });
+
+  it("adds odd parity to every expanded DES key byte", () => {
+    const keyHex = effectiveKeyToDesKeyHex(0x123456789abcden);
+    for (const pair of keyHex.match(/../g) ?? []) {
+      const ones = Number.parseInt(pair, 16).toString(2).replace(/0/g, "").length;
+      expect(ones % 2).toBe(1);
+    }
+    expect(hasOddDesParity(keyHex)).toBe(true);
+  });
+
+  it("normalizes DES block inputs and computes bit differences", () => {
+    expect(sanitizeDesBlockHex("01 23-ZZ")).toBe("0123000000000000");
+    expect(asciiToDesBlockHex("DES demo")).toBe("4445532064656d6f");
+    expect(hammingDistanceHex("0000000000000000", "ffffffffffffffff")).toBe(64);
+    expect(hammingDistanceHex("85e813540f0ab405", "85e813540f0ab405")).toBe(0);
+  });
+
+  it("reports bounded search expectations and candidate position", () => {
+    expect(expectedAttempts(256)).toEqual({ best: 1, average: 128, worst: 256 });
+    expect(candidatePosition(127, 256)).toBeCloseTo(49.8, 1);
+    expect(formatDuration(90)).toBe("1.5 min");
+  });
+
+  it("verifies a DES candidate against multiple known pairs", () => {
+    const fixedEffectiveKey = 0x12695bc9b7b7a0n;
+    const target = desKeyForCandidate(fixedEffectiveKey, 5, 4);
+    const plaintexts = ["0123456789abcdef", "fedcba9876543210"];
+    const pairs = plaintexts.map((plaintextHex) => ({
+      plaintextHex,
+      ciphertextHex: desCryptBlock(plaintextHex, target.keyHex).outputHex,
+    }));
+    const row = buildDesCandidateRow(pairs, fixedEffectiveKey, 4, 5);
+
+    expect(row.matches).toBe(true);
+    expect(row.pairMatches).toBe(2);
+    expect(row.candidateBits).toBe("0101");
+    expect(classifyDesKey(row.keyHex)).toBe("ordinary");
   });
 });

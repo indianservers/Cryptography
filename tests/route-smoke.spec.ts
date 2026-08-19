@@ -29,7 +29,7 @@ describe("route smoke registry", () => {
 
   it("has metadata for all non-demo navigation routes except intentional utility-only entries", () => {
     const metadataRoutes = new Set(algorithmMetadata.map((item) => item.route));
-    const utilityOnly = new Set(["/algorithms/tools/audit", "/algorithms/tools/test-vectors", "/algorithms/symmetric/aes-rounds", "/algorithms/symmetric/aes-test-vectors"]);
+    const utilityOnly = new Set(["/quiz-practice", "/algorithms/tools/audit", "/algorithms/tools/test-vectors", "/algorithms/symmetric/aes-rounds", "/algorithms/symmetric/aes-test-vectors"]);
 
     for (const item of navigationItems) {
       if (item.route.startsWith("/demos/") || utilityOnly.has(item.route)) continue;

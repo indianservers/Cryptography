@@ -12,6 +12,7 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       { index: true, lazy: lazyPage(() => import("../pages/HomePage")) },
+      { path: "quiz-practice", lazy: lazyPage(() => import("../pages/QuizPracticePage")) },
       { path: "demos/base64", lazy: lazyPage(() => import("../pages/demos/Base64IODemoPage")) },
       { path: "demos/md5", lazy: lazyPage(() => import("../pages/demos/MD5IODemoPage")) },
       { path: "demos/sha1", lazy: lazyPage(() => import("../pages/demos/SHA1IODemoPage")) },
@@ -128,6 +129,7 @@ export const router = createBrowserRouter([
       { path: "algorithms/pki/self-signed-demo", lazy: lazyPage(() => import("../pages/algorithms/pki/SelfSignedCertificateDemoPage")) },
       { path: "algorithms/attacks/frequency-analysis", lazy: lazyPage(() => import("../pages/algorithms/attacks/FrequencyAnalysisPage")) },
       { path: "algorithms/attacks/caesar-brute-force", lazy: lazyPage(() => import("../pages/algorithms/attacks/CaesarBruteForcePage")) },
+      { path: "algorithms/attacks/des-brute-force", lazy: lazyPage(() => import("../pages/algorithms/attacks/DESBruteForcePage")) },
       { path: "algorithms/attacks/vigenere-attack", lazy: lazyPage(() => import("../pages/algorithms/attacks/VigenereAttackPage")) },
       { path: "algorithms/attacks/ecb-pattern-leakage", lazy: lazyPage(() => import("../pages/algorithms/attacks/ECBPatternLeakagePage")) },
       { path: "algorithms/attacks/padding-oracle-concept", lazy: lazyPage(() => import("../pages/algorithms/attacks/PaddingOracleConceptPage")) },

@@ -2491,6 +2491,41 @@ export const algorithmMetadata: AlgorithmMetadata[] = [
     ]
   },
   {
+    "page": "DESBruteForcePage",
+    "route": "/algorithms/attacks/des-brute-force",
+    "label": "DES Brute-Force Key Search",
+    "category": "Cryptanalysis and Attacks",
+    "icon": "Zap",
+    "securityStatus": "Educational",
+    "intro": "Exhaust a deliberately reduced DES effective-key suffix and verify each candidate against a locally generated known pair.",
+    "inputs": [
+      "Known 64-bit plaintext block",
+      "Reduced key-space size",
+      "Toy hidden candidate"
+    ],
+    "outputs": [
+      "Recovered candidate",
+      "DES key with parity bits",
+      "Candidate verification trace",
+      "Live progress and throughput",
+      "Ciphertext Hamming distance",
+      "Recovered 16-round DES trace",
+      "Redacted classroom report"
+    ],
+    "visualizers": [
+      "Bounded key-space counter",
+      "Known-pair comparison table",
+      "Fixed and variable effective-key bits",
+      "Parity-byte view",
+      "Search-space position line",
+      "Best-average-worst comparison",
+      "Timing projection table"
+    ],
+    "notes": [
+      "The local search is capped at 12 variable effective-key bits and cannot search the real 56-bit DES key space."
+    ]
+  },
+  {
     "page": "VigenereAttackPage",
     "route": "/algorithms/attacks/vigenere-attack",
     "label": "Vigenere Attack Concepts",

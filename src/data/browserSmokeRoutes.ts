@@ -23,6 +23,7 @@ export const browserSmokeRoutes: BrowserSmokeExpectation[] = [
   { route: "/algorithms/symmetric/aes-mix-columns", expectsHeader: true, expectsSafetyStatus: true, expectsLearning: true, expectsAnimation: true, expectsMainContent: true, mobileOverflowCheck: true },
   { route: "/algorithms/blockchain/merkle-tree", expectsHeader: true, expectsSafetyStatus: true, expectsLearning: false, expectsAnimation: true, expectsMainContent: true, mobileOverflowCheck: true },
   { route: "/algorithms/attacks/ecb-pattern-leakage", expectsHeader: true, expectsSafetyStatus: true, expectsLearning: true, expectsAnimation: false, expectsMainContent: true, mobileOverflowCheck: true },
+  { route: "/algorithms/attacks/des-brute-force", expectsHeader: true, expectsSafetyStatus: true, expectsLearning: true, expectsAnimation: false, expectsMainContent: true, mobileOverflowCheck: true },
   { route: "/algorithms/pki/x509-certificate-viewer", expectsHeader: true, expectsSafetyStatus: true, expectsLearning: false, expectsAnimation: false, expectsMainContent: true, mobileOverflowCheck: true },
   { route: "/algorithms/tools/export-center", expectsHeader: true, expectsSafetyStatus: true, expectsLearning: false, expectsAnimation: false, expectsMainContent: true, mobileOverflowCheck: true },
 ];

@@ -45,6 +45,7 @@ export const requiredP1LearningRoutes = [
   "/algorithms/symmetric/des",
   "/algorithms/symmetric/des-full-step",
   "/algorithms/attacks/caesar-brute-force",
+  "/algorithms/attacks/des-brute-force",
 ] as const;
 
 export const requiredP0LearningRoutes = [
@@ -99,6 +100,7 @@ const p1Titles: Record<(typeof requiredP1LearningRoutes)[number], string> = {
   "/algorithms/symmetric/des": "DES Workbench",
   "/algorithms/symmetric/des-full-step": "DES Full Step",
   "/algorithms/attacks/caesar-brute-force": "Caesar Brute Force",
+  "/algorithms/attacks/des-brute-force": "DES Brute-Force Key Search",
 };
 
 const p0Titles: Record<(typeof requiredP0LearningRoutes)[number], string> = {
@@ -163,6 +165,7 @@ const specificFormula: Record<string, string> = {
   "/algorithms/symmetric/des": "Each DES round uses newR = L xor F(R, roundKey), then swaps the halves.",
   "/algorithms/symmetric/des-full-step": "DES applies initial permutation, 16 Feistel rounds, and final permutation over a 64-bit block.",
   "/algorithms/attacks/caesar-brute-force": "Try every shift k from 0 to 25 and score which plaintext looks most readable.",
+  "/algorithms/attacks/des-brute-force": "For each candidate k in the reduced space, compute DES_k(P) and stop when DES_k(P) equals the known ciphertext C.",
   "/algorithms/symmetric/aes-mix-columns": "Each column is multiplied by a fixed matrix over GF(2^8).",
   "/algorithms/symmetric/aes-key-expansion": "Each new AES word comes from a previous word xor a transformed earlier word.",
   "/algorithms/kdf/hkdf": "HKDF runs Extract to make a pseudorandom key, then Expand to make output key material.",
@@ -204,6 +207,7 @@ const conceptualBoundaries: Record<string, string> = {
   "/algorithms/padding/pss": "This is a PSS learning model. Do not treat the displayed structure as a standards-compliant signature encoding.",
   "/algorithms/attacks/ecdsa-nonce-reuse": "This page uses toy arithmetic to explain a defensive lesson. It must not be used against real signatures or keys.",
   "/algorithms/attacks/padding-oracle-concept": "This page explains the defensive concept only: uniform errors and authenticated encryption stop this class of leak.",
+  "/algorithms/attacks/des-brute-force": "This exact DES demonstration varies at most 12 effective-key bits against a locally generated sample. It cannot search arbitrary or full 56-bit DES keys.",
 };
 
 function inferFamily(route: string) {

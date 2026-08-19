@@ -4,6 +4,7 @@ import { navigationItems } from "../data/navigation";
 import { SecurityStatusBadge } from "../components/common/SecurityStatusBadge";
 import { BrowserSupportBadge, ImplementationBadge } from "../components/common/ImplementationBadge";
 import { moduleAuditSummary } from "../data/moduleAuditRegistry";
+import { quizPracticeQuestions } from "../data/quizPractice";
 
 export default function HomePage() {
   const featured = navigationItems.filter((item) => ["/algorithms/symmetric/aes", "/algorithms/symmetric/des", "/algorithms/asymmetric/rsa", "/algorithms/hash/sha-256-step", "/algorithms/classical/caesar-cipher", "/algorithms/ecc/ecdsa"].includes(item.route));
@@ -40,6 +41,16 @@ export default function HomePage() {
             <span>{supportCounts["Educational Substitute"] ?? 0} guided visual models</span>
             <span>P0/P1/P2/P3: {moduleAuditSummary.P0}/{moduleAuditSummary.P1}/{moduleAuditSummary.P2}/{moduleAuditSummary.P3}</span>
           </div>
+        </div>
+      </section>
+      <section className="rounded-md border border-teal-200 bg-teal-50 p-4 shadow-sm sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-teal-700">Quiz and Practice</p>
+            <h2 className="mt-1 text-lg font-semibold text-teal-950">{quizPracticeQuestions.length} local practice questions</h2>
+            <p className="mt-1 max-w-2xl text-sm text-teal-900">Answer registry-backed questions, review missed items, and save progress locally in this browser.</p>
+          </div>
+          <Link className="btn btn-primary" to="/quiz-practice">Start quiz practice</Link>
         </div>
       </section>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

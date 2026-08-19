@@ -21,6 +21,7 @@ import { ModuleAnimationSection } from "./ModuleAnimationSection";
 import { GuidedModePanel } from "./GuidedModePanel";
 import { ChallengeModePanel } from "./ChallengeModePanel";
 import { SimpleBlockDiagram } from "./AlgorithmLearningScaffold";
+import { PhaseOneAlgorithmGuide } from "./PhaseOneAlgorithmGuide";
 
 const categoryTone = (category: string) => {
   if (/symmetric|block/i.test(category)) return "border-teal-200 bg-teal-50 text-teal-800";
@@ -120,6 +121,7 @@ export function PageHeader({ title, category, status, children }: { title: strin
         />
       )}
       <SimpleBlockDiagram route={route} title={title} category={category} status={status} />
+      <PhaseOneAlgorithmGuide route={route} />
       <ModuleLearningSection route={route} />
       <ModuleAnimationSection route={route} />
       <GuidedModePanel route={route} />

@@ -67,6 +67,7 @@ const customRoutes = new Set([
   "/algorithms/encoding/binary",
   "/algorithms/attacks/frequency-analysis",
   "/algorithms/attacks/caesar-brute-force",
+  "/algorithms/attacks/des-brute-force",
   "/algorithms/attacks/ecb-pattern-leakage",
   "/algorithms/attacks/rsa-small-exponent",
   "/algorithms/attacks/rsa-factorization-demo",

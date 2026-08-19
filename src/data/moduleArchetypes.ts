@@ -284,6 +284,7 @@ const explicitArchetypeRoutes: Record<string, ModuleArchetypeType> = {
   "/algorithms/attacks/ecdsa-nonce-reuse": "attack-concept",
   "/algorithms/attacks/padding-oracle-concept": "attack-concept",
   "/algorithms/attacks/caesar-brute-force": "attack-concept",
+  "/algorithms/attacks/des-brute-force": "attack-concept",
   "/algorithms/attacks/frequency-analysis": "attack-concept",
   "/algorithms/attacks/hash-collision": "attack-concept",
   "/algorithms/attacks/nonce-reuse": "attack-concept",

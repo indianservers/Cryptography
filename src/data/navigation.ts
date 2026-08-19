@@ -132,6 +132,14 @@ export const navigationItems: NavigationItem[] = inputOutputDemoItems.concat(alg
   securityStatus: "Educational",
   implementationStatus: "Real",
   browserSupport: "Mixed",
+}, {
+  label: "Quiz and Practice",
+  category: "Learning Progress",
+  icon: "BookOpen",
+  route: "/quiz-practice",
+  securityStatus: "Educational",
+  implementationStatus: "Real",
+  browserSupport: "Custom TypeScript",
 }]);
 
 export const navigationCategories = [
@@ -154,6 +162,7 @@ export const navigationCategories = [
   "Blockchain Cryptography",
   "Randomness and Entropy",
   "Benchmark and Comparison",
+  "Learning Progress",
   "Saved Experiments",
   "Export Center",
 ];
@@ -211,6 +220,7 @@ export const navigationSections = [
     categories: [
       "Randomness and Entropy",
       "Benchmark and Comparison",
+      "Learning Progress",
       "Saved Experiments",
       "Export Center",
     ],
